@@ -1,40 +1,44 @@
-local function ServerHop()
-    local HttpService = game:GetService("HttpService")
-    local TeleportService = game:GetService("TeleportService")
-    local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-    for _, s in pairs(Servers.data) do
-        if s.playing < s.maxPlayers and s.id ~= game.JobId then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id)
-            break
+_G.AutoFarm = true
+_G.FastAttack = true
+
+repeat task.wait() until game:IsLoaded()
+
+local function JoinTeam()
+    pcall(function()
+        if game.Players.LocalPlayer.Team == nil then
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marine")
         end
-    end
+    end)
 end
 
-local function AutoFruit()
-    while task.wait(0.5) do
-        local fruitFound = false
-        for _, v in pairs(game.Workspace:GetChildren()) do
-            if v:IsA("Tool") and (string.find(v.Name, "Fruit") or v:FindFirstChild("Handle")) then
-                fruitFound = true
-                local hrp = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
-                hrp.CFrame = v.Handle.CFrame
-                task.wait(0.2)
+local function Tween(Target)
+    local Character = game.Players.LocalPlayer.Character
+    local RootPart = Character:WaitForChild("HumanoidRootPart")
+    local Distance = (RootPart.Position - Target.p).Magnitude
+    local Speed = 300
+    game:GetService("TweenService"):Create(RootPart, TweenInfo.new(Distance/Speed, Enum.EasingStyle.Linear), {CFrame = Target}):Play()
+end
+
+local function Attack()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+end
+
+spawn(function()
+    JoinTeam()
+    while _G.AutoFarm do
+        task.wait(0.1)
+        pcall(function()
+            local Enemies = game.Workspace.Enemies:GetChildren()
+            for _, v in pairs(Enemies) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    repeat
+                        task.wait()
+                        Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                        if _G.FastAttack then Attack() end
+                    until not v.Parent or v.Humanoid.Health <= 0 or not _G.AutoFarm
+                end
             end
-        end
-        
-        for _, item in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
-            if string.find(item.Name, "Fruit") then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", item.Name, item)
-            end
-        end
-
-        if not fruitFound then
-            task.wait(2)
-            ServerHop()
-        end
+        end)
     end
-end
-
-if game:IsLoaded() then
-    spawn(AutoFruit)
-end
+end)
