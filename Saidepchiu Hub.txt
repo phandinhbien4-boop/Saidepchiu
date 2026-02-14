@@ -1,4 +1,9 @@
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Player = game:GetService("Players").LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+local Players = game:GetService("Players")
 
 local Window = Fluent:CreateWindow({
     Title = "Saidepchiu Hub - By Biendepzai",
@@ -10,15 +15,6 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- [[ SETUP TABS ]]
-local Tabs = {
-    Farm = Window:AddTab({ Title = "Farm", Icon = "home" }),
-    ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
-    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "apple" })
-}
-
--- [[ NÚT ON/OFF CHUYÊN NGHIỆP ]]
 local ScreenGui = Instance.new("ScreenGui")
 local ToggleBtn = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
@@ -57,9 +53,88 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- [[ ⚔️ FARM TAB ]]
+local Tabs = {
+    Farm = Window:AddTab({ Title = "Farm", Icon = "home" }),
+    ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
+    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "apple" })
+}
+
+local Options = Fluent.Options
+
+local function getPlayerLevel()
+    local level = 1
+    pcall(function()
+        level = Player.Data.Level.Value
+    end)
+    return level
+end
+
+local function getQuestMobs(level)
+    if level < 10 then return "Bandit"
+    elseif level < 30 then return "Monkey"
+    elseif level < 60 then return "Pirate"
+    elseif level < 90 then return "Brute"
+    elseif level < 120 then return "Desert Officer"
+    elseif level < 150 then return "Snow Bandit"
+    elseif level < 180 then return "Vampire"
+    elseif level < 210 then return "Snow Troop"
+    elseif level < 240 then return "Mercenary"
+    elseif level < 270 then return "Swan Pirate"
+    elseif level < 300 then return "Marine Captain"
+    elseif level < 330 then return "Sky Bandit"
+    elseif level < 360 then return "Dark Master"
+    elseif level < 390 then return "Toga Warrior"
+    elseif level < 420 then return "Gladiator"
+    elseif level < 450 then return "Military Soldier"
+    elseif level < 480 then return "Military Spy"
+    elseif level < 510 then return "Fishman Warrior"
+    elseif level < 540 then return "Fishman Commando"
+    elseif level < 570 then return "God's Guard"
+    elseif level < 600 then return "Shanda"
+    elseif level < 630 then return "Royal Squad"
+    elseif level < 660 then return "Royal Soldier"
+    else return "Galley Pirate" end
+end
+
+local farmLoop
 Tabs.Farm:AddSection("⚔️ AUTO FARM")
-Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false})
+Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false}):OnChanged(function(val)
+    if val then
+        Fluent:Notify({Title = "Farm", Content = "Bắt đầu farm level", Duration = 2})
+        farmLoop = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                local level = getPlayerLevel()
+                local mobName = getQuestMobs(level)
+                local nearestMob = nil
+                local nearestDist = math.huge
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj.Name == mobName and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+                        local hum = obj:FindFirstChild("Humanoid")
+                        if hum and hum.Health > 0 then
+                            local dist = (obj.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                            if dist < nearestDist then
+                                nearestMob = obj
+                                nearestDist = dist
+                            end
+                        end
+                    end
+                end
+                if nearestMob and nearestDist < 1000 then
+                    for _ = 1, 3 do
+                        nearestMob.HumanoidRootPart.CFrame = Player.Character.HumanoidRootPart.CFrame
+                    end
+                    Player.Character.HumanoidRootPart.CFrame = nearestMob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                    task.wait(0.1)
+                    VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
+                end
+            end)
+        end)
+    else
+        if farmLoop then farmLoop:Disconnect() end
+    end
+end)
+
 Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false})
 Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss cần farm", Values = {"The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert", "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral", "Wysper", "Darkbeard", "Rip_Indra", "Dough King"}, Default = 1})
 Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss", Default = false})
@@ -71,22 +146,186 @@ Tabs.Farm:AddToggle("AutoRipIndra", {Title = "Tự động đánh rip_indra", De
 Tabs.Farm:AddToggle("AutoDarkbeard", {Title = "Tự động đánh darkbeard", Default = false})
 Tabs.Farm:AddToggle("AutoDoughKing", {Title = "Tự động đánh dough king", Default = false})
 
--- [[ 🔍 ESP TAB ]]
+local highlights = {}
+local espLoop
+
+function clearESP()
+    for _, v in pairs(highlights) do
+        pcall(function() v:Destroy() end)
+    end
+    highlights = {}
+end
+
+function createESP(obj, color, name)
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = obj
+    highlight.FillColor = color
+    highlight.FillTransparency = 0.3
+    highlight.Parent = game:GetService("CoreGui")
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.Adornee = obj
+    billboard.Parent = highlight
+    
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1, 0, 1, 0)
+    text.BackgroundTransparency = 1
+    text.Text = name
+    text.TextColor3 = Color3.fromRGB(255, 255, 255)
+    text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    text.TextStrokeTransparency = 0
+    text.TextSize = 16
+    text.Font = Enum.Font.GothamBold
+    text.Parent = billboard
+    
+    table.insert(highlights, highlight)
+    return highlight
+end
+
 Tabs.ESP:AddSection("🔍 CÀI ĐẶT ESP")
-Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false})
-Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false})
+Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false}):OnChanged(function(val)
+    if val then
+        espLoop = RunService.RenderStepped:Connect(function()
+            clearESP()
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj.Name:find("Fruit") or obj.Name:find("Banana") or obj.Name:find("Apple") then
+                    local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                    createESP(obj, Color3.fromRGB(255, 215, 0), "🍎 " .. math.floor(dist) .. "m")
+                end
+            end
+        end)
+    else
+        if espLoop then espLoop:Disconnect() end
+        clearESP()
+    end
+end)
+
+Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false}):OnChanged(function(val)
+    if val then
+        espLoop = RunService.RenderStepped:Connect(function()
+            clearESP()
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr ~= Player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (plr.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                    createESP(plr.Character, Color3.fromRGB(255, 0, 0), plr.Name .. " [" .. math.floor(dist) .. "m]")
+                end
+            end
+        end)
+    else
+        if espLoop then espLoop:Disconnect() end
+        clearESP()
+    end
+end)
+
 Tabs.ESP:AddToggle("ESPIsland", {Title = "Định vị island (đảo)", Default = false})
-Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest (rương)", Default = false})
-Tabs.ESP:AddToggle("ESPBerry", {Title = "Định vị trái berry", Default = false})
+Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest (rương)", Default = false}):OnChanged(function(val)
+    if val then
+        espLoop = RunService.RenderStepped:Connect(function()
+            clearESP()
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj.Name == "Chest1" or obj.Name == "Chest2" or obj.Name == "Chest3" then
+                    local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                    createESP(obj, Color3.fromRGB(0, 255, 0), "📦 " .. math.floor(dist) .. "m")
+                end
+            end
+        end)
+    else
+        if espLoop then espLoop:Disconnect() end
+        clearESP()
+    end
+end)
+
+Tabs.ESP:AddToggle("ESPBerry", {Title = "Định vị trái berry", Default = false}):OnChanged(function(val)
+    if val then
+        espLoop = RunService.RenderStepped:Connect(function()
+            clearESP()
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj.Name:find("Berry") or obj.Name:find("Beli") then
+                    local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                    createESP(obj, Color3.fromRGB(255, 255, 0), "💰 " .. math.floor(dist) .. "m")
+                end
+            end
+        end)
+    else
+        if espLoop then espLoop:Disconnect() end
+        clearESP()
+    end
+end)
+
 Tabs.ESP:AddDropdown("ESPColor", {Title = "Màu esp", Values = {"Đỏ", "Xanh dương", "Xanh lá", "Vàng", "Tím", "Hồng", "Trắng"}, Default = 1})
 
--- [[ 🌍 TELEPORT TAB ]]
 Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
-Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {"Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village", "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands", "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard", "Sea 2 - Snow Mountain", "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree", "Sea 3 - Turtle Island", "Sea 3 - Castle on the Sea"}, Default = 1})
-Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function() Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển", Duration = 2}) end})
+Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {
+    "Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village",
+    "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands",
+    "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard",
+    "Sea 2 - Snow Mountain", "Sea 2 - Hot and Cold", "Sea 2 - Cursed Ship", "Sea 2 - Ice Castle",
+    "Sea 2 - Forgotten Island", "Sea 2 - Usoapp Island", "Sea 2 - Mansion", "Sea 2 - Floating Turtle",
+    "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree", "Sea 3 - Turtle Island",
+    "Sea 3 - Castle on the Sea", "Sea 3 - Sea of Treats", "Sea 3 - Haunted Castle"
+}, Default = 1})
+
+Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function()
+    local selected = Options.IslandSelect.Value
+    local islandPos = nil
+    
+    if selected == "Sea 1 - Marine Start" then islandPos = CFrame.new(1050, 20, 1450)
+    elseif selected == "Sea 1 - Middle Town" then islandPos = CFrame.new(-800, 20, 1250)
+    elseif selected == "Sea 1 - Jungle" then islandPos = CFrame.new(1600, 20, 50)
+    elseif selected == "Sea 1 - Pirate Village" then islandPos = CFrame.new(-1100, 20, 3800)
+    elseif selected == "Sea 1 - Desert" then islandPos = CFrame.new(900, 20, 4300)
+    elseif selected == "Sea 1 - Frozen Village" then islandPos = CFrame.new(700, 20, -2200)
+    elseif selected == "Sea 1 - Colosseum" then islandPos = CFrame.new(-1800, 20, -700)
+    elseif selected == "Sea 1 - Skylands" then islandPos = CFrame.new(-5000, 300, -4000)
+    elseif selected == "Sea 2 - Kingdom of Rose" then islandPos = CFrame.new(1250, 30, -1250)
+    elseif selected == "Sea 2 - Green Zone" then islandPos = CFrame.new(-2500, 30, -7000)
+    elseif selected == "Sea 2 - Cafe" then islandPos = CFrame.new(-450, 30, -3000)
+    elseif selected == "Sea 2 - Graveyard" then islandPos = CFrame.new(-5500, 30, -5500)
+    elseif selected == "Sea 2 - Snow Mountain" then islandPos = CFrame.new(800, 300, -5500)
+    elseif selected == "Sea 2 - Hot and Cold" then islandPos = CFrame.new(6000, 30, -1000)
+    elseif selected == "Sea 2 - Cursed Ship" then islandPos = CFrame.new(9000, 30, -4000)
+    elseif selected == "Sea 2 - Ice Castle" then islandPos = CFrame.new(5000, 30, -6000)
+    elseif selected == "Sea 2 - Forgotten Island" then islandPos = CFrame.new(-3000, 30, -2000)
+    elseif selected == "Sea 2 - Usoapp Island" then islandPos = CFrame.new(4000, 30, 2000)
+    elseif selected == "Sea 2 - Mansion" then islandPos = CFrame.new(-8000, 30, -3000)
+    elseif selected == "Sea 2 - Floating Turtle" then islandPos = CFrame.new(7000, 200, -2000)
+    elseif selected == "Sea 3 - Port Town" then islandPos = CFrame.new(-1200, 40, -3500)
+    elseif selected == "Sea 3 - Hydra Island" then islandPos = CFrame.new(5000, 40, -6000)
+    elseif selected == "Sea 3 - Great Tree" then islandPos = CFrame.new(7000, 100, -8000)
+    elseif selected == "Sea 3 - Turtle Island" then islandPos = CFrame.new(9000, 30, -3000)
+    elseif selected == "Sea 3 - Castle on the Sea" then islandPos = CFrame.new(-5000, 200, -5000)
+    elseif selected == "Sea 3 - Sea of Treats" then islandPos = CFrame.new(2000, 30, -9000)
+    elseif selected == "Sea 3 - Haunted Castle" then islandPos = CFrame.new(-9000, 30, -8000)
+    end
+    
+    if islandPos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        local teleportSafe = {"Cursed Ship", "Mansion", "Floating Turtle", "Castle on the Sea"}
+        local isSafe = false
+        for _, name in pairs(teleportSafe) do
+            if selected:find(name) then
+                isSafe = true
+                break
+            end
+        end
+        
+        if isSafe then
+            Player.Character.HumanoidRootPart.CFrame = islandPos
+            Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển", Duration = 2})
+        else
+            local bp = Instance.new("BodyPosition")
+            bp.Parent = Player.Character.HumanoidRootPart
+            bp.Position = islandPos.Position
+            bp.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            task.wait(2)
+            bp:Destroy()
+            Fluent:Notify({Title = "Teleport", Content = "Đã bay đến", Duration = 2})
+        end
+    end
+end})
+
 Tabs.Teleport:AddToggle("AutoTeleport", {Title = "Tự động dịch chuyển đến đảo", Default = false})
 
--- [[ 🍎 FRUIT/RAID TAB ]]
 Tabs.FruitRaid:AddSection("🍎 FRUIT")
 Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái blox", Default = false})
 Tabs.FruitRaid:AddToggle("AutoSaveFruit", {Title = "Tự động lưu trái blox", Default = false})
