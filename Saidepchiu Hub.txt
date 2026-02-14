@@ -1,6 +1,4 @@
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
     Title = "Saidepchiu Hub - By Biendepzai",
@@ -9,10 +7,7 @@ local Window = Fluent:CreateWindow({
     Size = UDim2.fromOffset(600, 500),
     Acrylic = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl,
-    Resizable = true,
-    ShowMinimize = true,
-    ShowClose = true
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
 local Tabs = {
@@ -21,8 +16,6 @@ local Tabs = {
     Teleport = Window:AddTab({ Title = "Teleport", Icon = "rbxassetid://4483345998" }),
     FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "rbxassetid://4483345998" })
 }
-
-local Options = Fluent.Options
 
 -- Farm Tab
 Tabs.Farm:AddSection("⚔️ AUTO FARM")
@@ -49,7 +42,7 @@ Tabs.ESP:AddDropdown("ESPColor", {Title = "Màu esp", Values = {"Đỏ", "Xanh d
 -- Teleport Tab
 Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
 Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {"Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village", "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands", "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard", "Sea 2 - Snow Mountain", "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree", "Sea 3 - Turtle Island", "Sea 3 - Castle on the Sea"}, Default = 1})
-Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function() Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển đến đảo đã chọn", Duration = 2}) end})
+Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function() Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển", Duration = 2}) end})
 Tabs.Teleport:AddToggle("AutoTeleport", {Title = "Tự động dịch chuyển đến đảo", Default = false})
 
 -- Fruit/Raid Tab
@@ -66,6 +59,6 @@ Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái
 
 Fluent:Notify({
     Title = "Saidepchiu Hub",
-    Content = "Đã tải thành công!",
+    Content = "Đã tải thành công! Dùng nút - và X góc phải để ẩn menu",
     Duration = 3
 })
