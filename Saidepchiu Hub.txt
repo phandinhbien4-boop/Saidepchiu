@@ -10,19 +10,60 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+-- [[ SETUP TABS ]]
 local Tabs = {
-    Farm = Window:AddTab({ Title = "Farm", Icon = "rbxassetid://4483345998" }),
-    ESP = Window:AddTab({ Title = "ESP", Icon = "rbxassetid://4483345998" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "rbxassetid://4483345998" }),
-    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "rbxassetid://4483345998" })
+    Farm = Window:AddTab({ Title = "Farm", Icon = "home" }),
+    ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
+    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "apple" })
 }
 
--- Farm Tab
+-- [[ NÚT ON/OFF CHUYÊN NGHIỆP ]]
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleBtn = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+local UIStroke = Instance.new("UIStroke")
+
+ScreenGui.Name = "Saidepchiu_UI"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.DisplayOrder = 999
+
+ToggleBtn.Name = "ControlBtn"
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+ToggleBtn.Position = UDim2.new(0, 15, 0.5, -30)
+ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Text = "ON"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 16
+ToggleBtn.Draggable = true
+ToggleBtn.Active = true
+
+UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.Parent = ToggleBtn
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Parent = ToggleBtn
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    Window:Minimize()
+    if ToggleBtn.Text == "ON" then
+        ToggleBtn.Text = "OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    else
+        ToggleBtn.Text = "ON"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+    end
+end)
+
+-- [[ ⚔️ FARM TAB ]]
 Tabs.Farm:AddSection("⚔️ AUTO FARM")
 Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false})
 Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false})
 Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss cần farm", Values = {"The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert", "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral", "Wysper", "Darkbeard", "Rip_Indra", "Dough King"}, Default = 1})
 Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss", Default = false})
+
 Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
 Tabs.Farm:AddToggle("AutoFactory", {Title = "Tự động đánh nhà máy", Default = false})
 Tabs.Farm:AddToggle("AutoPiratesRaid", {Title = "Tự động đánh tập kích hải tặc", Default = false})
@@ -30,7 +71,7 @@ Tabs.Farm:AddToggle("AutoRipIndra", {Title = "Tự động đánh rip_indra", De
 Tabs.Farm:AddToggle("AutoDarkbeard", {Title = "Tự động đánh darkbeard", Default = false})
 Tabs.Farm:AddToggle("AutoDoughKing", {Title = "Tự động đánh dough king", Default = false})
 
--- ESP Tab
+-- [[ 🔍 ESP TAB ]]
 Tabs.ESP:AddSection("🔍 CÀI ĐẶT ESP")
 Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false})
 Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false})
@@ -39,17 +80,18 @@ Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest (rương)", Default 
 Tabs.ESP:AddToggle("ESPBerry", {Title = "Định vị trái berry", Default = false})
 Tabs.ESP:AddDropdown("ESPColor", {Title = "Màu esp", Values = {"Đỏ", "Xanh dương", "Xanh lá", "Vàng", "Tím", "Hồng", "Trắng"}, Default = 1})
 
--- Teleport Tab
+-- [[ 🌍 TELEPORT TAB ]]
 Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
 Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {"Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village", "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands", "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard", "Sea 2 - Snow Mountain", "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree", "Sea 3 - Turtle Island", "Sea 3 - Castle on the Sea"}, Default = 1})
 Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function() Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển", Duration = 2}) end})
 Tabs.Teleport:AddToggle("AutoTeleport", {Title = "Tự động dịch chuyển đến đảo", Default = false})
 
--- Fruit/Raid Tab
+-- [[ 🍎 FRUIT/RAID TAB ]]
 Tabs.FruitRaid:AddSection("🍎 FRUIT")
 Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái blox", Default = false})
 Tabs.FruitRaid:AddToggle("AutoSaveFruit", {Title = "Tự động lưu trái blox", Default = false})
 Tabs.FruitRaid:AddToggle("AutoCollectFruit", {Title = "Tự động bay đến trái blox", Default = false})
+
 Tabs.FruitRaid:AddSection("⚡ RAID")
 Tabs.FruitRaid:AddDropdown("ChipSelect", {Title = "Chọn chip raid", Values = {"Flame Chip", "Ice Chip", "Quake Chip", "Light Chip", "Dark Chip", "String Chip", "Rumble Chip", "Magma Chip", "Buddha Chip", "Dough Chip"}, Default = 1})
 Tabs.FruitRaid:AddToggle("AutoBuyChip", {Title = "Tự động mua chip", Default = false})
@@ -57,8 +99,9 @@ Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động tập kích", Defaul
 Tabs.FruitRaid:AddToggle("AutoAwaken", {Title = "Tự động thức tỉnh", Default = false})
 Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái blox ít tiền", Default = false})
 
+Window:SelectTab(1)
 Fluent:Notify({
     Title = "Saidepchiu Hub",
-    Content = "Đã tải thành công! Dùng nút - và X góc phải để ẩn menu",
-    Duration = 3
+    Content = "Đã khôi phục toàn bộ chức năng + Nút ON/OFF!",
+    Duration = 5
 })
