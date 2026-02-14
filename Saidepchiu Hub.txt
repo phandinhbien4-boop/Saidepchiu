@@ -4,19 +4,22 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 local Window = Fluent:CreateWindow({
     Title = "Saidepchiu Hub - By Biendepzai",
-    SubTitle = "Blox Fruits | All Seas",
+    SubTitle = "Blox Fruits",
     TabWidth = 160,
-    Size = UDim2.fromOffset(620, 540),
+    Size = UDim2.fromOffset(600, 500),
     Acrylic = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    MinimizeKey = Enum.KeyCode.LeftControl,
+    Resizable = true,
+    ShowMinimize = true,
+    ShowClose = true
 })
 
 local Tabs = {
-    Farm = Window:AddTab({ Title = "Farm", Icon = "swords" }),
-    ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map-pin" }),
-    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "apple" })
+    Farm = Window:AddTab({ Title = "Farm", Icon = "rbxassetid://4483345998" }),
+    ESP = Window:AddTab({ Title = "ESP", Icon = "rbxassetid://4483345998" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "rbxassetid://4483345998" }),
+    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "rbxassetid://4483345998" })
 }
 
 local Options = Fluent.Options
@@ -24,472 +27,270 @@ local Player = game:GetService("Players").LocalPlayer
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 
-local function ShowFactionDialog()
-    local dialog = Instance.new("ScreenGui")
-    dialog.Name = "FactionDialog"
-    dialog.Parent = game:GetService("CoreGui")
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 450, 0, 350)
-    frame.Position = UDim2.new(0.5, -225, 0.5, -175)
-    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    frame.BackgroundTransparency = 0.1
-    frame.BorderSizePixel = 0
-    frame.Active = true
-    frame.Draggable = true
-    frame.Parent = dialog
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 60)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "🍖 HÃY CHỌN PHE!"
-    title.TextColor3 = Color3.fromRGB(255, 200, 50)
-    title.TextSize = 28
-    title.Font = Enum.Font.GothamBold
-    title.Parent = frame
-    
-    local pirateBtn = Instance.new("TextButton")
-    pirateBtn.Size = UDim2.new(0.8, 0, 0, 60)
-    pirateBtn.Position = UDim2.new(0.1, 0, 0.25, 0)
-    pirateBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-    pirateBtn.Text = "🏴‍☠️ HẢI TẶC"
-    pirateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    pirateBtn.TextSize = 20
-    pirateBtn.Font = Enum.Font.GothamBold
-    pirateBtn.AutoButtonColor = false
-    pirateBtn.Parent = frame
-    
-    local pirateCorner = Instance.new("UICorner")
-    pirateCorner.CornerRadius = UDim.new(0, 8)
-    pirateCorner.Parent = pirateBtn
-    
-    local pirateDesc = Instance.new("TextLabel")
-    pirateDesc.Size = UDim2.new(0.8, 0, 0, 80)
-    pirateDesc.Position = UDim2.new(0.1, 0, 0.4, 0)
-    pirateDesc.BackgroundTransparency = 1
-    pirateDesc.Text = "Chế độ với hải tặc và cướp biển!\n• Lệ phong hải tặc của chính bạn\n• Đánh bại hải quân\n• Thuyền chiến hơn và rẻ hơn\n• Nhịp đàn thắng!"
-    pirateDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
-    pirateDesc.TextSize = 14
-    pirateDesc.TextWrapped = true
-    pirateDesc.Font = Enum.Font.Gotham
-    pirateDesc.Parent = frame
-    
-    local marineBtn = Instance.new("TextButton")
-    marineBtn.Size = UDim2.new(0.8, 0, 0, 60)
-    marineBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
-    marineBtn.BackgroundColor3 = Color3.fromRGB(40, 80, 180)
-    marineBtn.Text = "⚓ HẢI QUÂN"
-    marineBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    marineBtn.TextSize = 20
-    marineBtn.Font = Enum.Font.GothamBold
-    marineBtn.AutoButtonColor = false
-    marineBtn.Parent = frame
-    
-    local marineCorner = Instance.new("UICorner")
-    marineCorner.CornerRadius = UDim.new(0, 8)
-    marineCorner.Parent = marineBtn
-    
-    local marineDesc = Instance.new("TextLabel")
-    marineDesc.Size = UDim2.new(0.8, 0, 0, 50)
-    marineDesc.Position = UDim2.new(0.1, 0, 0.8, 0)
-    marineDesc.BackgroundTransparency = 1
-    marineDesc.Text = "Chế độ với hải quân và cảnh sát biển!\n• Bảo vệ hòa bình\n• Đánh bại hải tặc"
-    marineDesc.TextColor3 = Color3.fromRGB(200, 200, 200)
-    marineDesc.TextSize = 14
-    marineDesc.TextWrapped = true
-    marineDesc.Font = Enum.Font.Gotham
-    marineDesc.Parent = frame
-    
-    local quickFrame = Instance.new("Frame")
-    quickFrame.Size = UDim2.new(0.8, 0, 0, 40)
-    quickFrame.Position = UDim2.new(0.1, 0, 0.9, 0)
-    quickFrame.BackgroundTransparency = 1
-    quickFrame.Parent = frame
-    
-    local quickCheck = Instance.new("ImageButton")
-    quickCheck.Size = UDim2.new(0, 25, 0, 25)
-    quickCheck.Position = UDim2.new(0, 0, 0.5, -12.5)
-    quickCheck.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    quickCheck.AutoButtonColor = false
-    quickCheck.Parent = quickFrame
-    
-    local checkCorner = Instance.new("UICorner")
-    checkCorner.CornerRadius = UDim.new(0, 4)
-    checkCorner.Parent = quickCheck
-    
-    local quickText = Instance.new("TextLabel")
-    quickText.Size = UDim2.new(1, -35, 1, 0)
-    quickText.Position = UDim2.new(0, 35, 0, 0)
-    quickText.BackgroundTransparency = 1
-    quickText.Text = "Chế Độ Nhanh (Giảm Lag cho mobile)"
-    quickText.TextColor3 = Color3.fromRGB(220, 220, 220)
-    quickText.TextSize = 14
-    quickText.TextXAlignment = Enum.TextXAlignment.Left
-    quickText.Font = Enum.Font.Gotham
-    quickText.Parent = quickFrame
-    
-    local quickChecked = false
-    quickCheck.MouseButton1Click:Connect(function()
-        quickChecked = not quickChecked
-        if quickChecked then
-            quickCheck.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-        else
-            quickCheck.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        end
-    end)
-    
-    pirateBtn.MouseButton1Click:Connect(function()
+Tabs.Farm:AddSection("⚔️ AUTO FARM")
+
+Tabs.Farm:AddToggle("AutoFarmLevel", {
+    Title = "Tự động farm level",
+    Description = "Tự động tìm và đánh quái",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto farm level", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddToggle("AutoAllBoss", {
+    Title = "Tự động farm tất cả boss",
+    Description = "Tự động tìm và đánh tất cả boss",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto farm all boss", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddDropdown("BossSelect", {
+    Title = "Chọn boss cần farm",
+    Values = {"The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert", "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral", "Wysper", "Darkbeard", "Rip_Indra", "Dough King"},
+    Default = 1
+})
+
+Tabs.Farm:AddToggle("AutoBoss", {
+    Title = "Tự động farm boss",
+    Description = "Farm boss đã chọn",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto farm boss", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
+
+Tabs.Farm:AddToggle("AutoFactory", {
+    Title = "Tự động đánh nhà máy",
+    Description = "Auto Farm Factory",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto factory", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddToggle("AutoPiratesRaid", {
+    Title = "Tự động đánh tập kích hải tặc",
+    Description = "Auto Farm Pirates Raid",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto pirates raid", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddToggle("AutoRipIndra", {
+    Title = "Tự động đánh rip_indra",
+    Description = "Auto Farm Rip_Indra",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto rip_indra", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddToggle("AutoDarkbeard", {
+    Title = "Tự động đánh darkbeard",
+    Description = "Auto Farm Darkbeard",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto darkbeard", Duration = 2 })
+    end
+end)
+
+Tabs.Farm:AddToggle("AutoDoughKing", {
+    Title = "Tự động đánh dough king",
+    Description = "Auto Farm Dough King",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Farm", Content = "Đã bật auto dough king", Duration = 2 })
+    end
+end)
+
+Tabs.ESP:AddSection("🔍 CÀI ĐẶT ESP")
+
+Tabs.ESP:AddToggle("ESPBloxFruit", {
+    Title = "Định vị trái blox",
+    Description = "Hiển thị vị trí trái Blox",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "ESP", Content = "Đã bật esp blox fruit", Duration = 2 })
+    end
+end)
+
+Tabs.ESP:AddToggle("ESPPlayer", {
+    Title = "Định vị người chơi",
+    Description = "Hiển thị vị trí người chơi",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "ESP", Content = "Đã bật esp player", Duration = 2 })
+    end
+end)
+
+Tabs.ESP:AddToggle("ESPIsland", {
+    Title = "Định vị island (đảo)",
+    Description = "Hiển thị tên các đảo",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "ESP", Content = "Đã bật esp island", Duration = 2 })
+    end
+end)
+
+Tabs.ESP:AddToggle("ESPChest", {
+    Title = "Định vị chest (rương)",
+    Description = "Hiển thị vị trí rương",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "ESP", Content = "Đã bật esp chest", Duration = 2 })
+    end
+end)
+
+Tabs.ESP:AddToggle("ESPBerry", {
+    Title = "Định vị trái berry",
+    Description = "Hiển thị vị trí trái Berry",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "ESP", Content = "Đã bật esp berry", Duration = 2 })
+    end
+end)
+
+Tabs.ESP:AddDropdown("ESPColor", {
+    Title = "Màu esp",
+    Values = {"Đỏ", "Xanh dương", "Xanh lá", "Vàng", "Tím", "Hồng"},
+    Default = 1
+})
+
+Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
+
+Tabs.Teleport:AddDropdown("IslandSelect", {
+    Title = "Chọn đảo",
+    Values = {
+        "Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village",
+        "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands",
+        "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard",
+        "Sea 2 - Snow Mountain", "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree",
+        "Sea 3 - Turtle Island", "Sea 3 - Castle on the Sea"
+    },
+    Default = 1
+})
+
+Tabs.Teleport:AddButton({
+    Title = "Dịch chuyển ngay",
+    Description = "Click để dịch chuyển đến đảo đã chọn",
+    Callback = function()
         Fluent:Notify({
-            Title = "Đã chọn phe",
-            Content = "Bạn đã chọn HẢI TẶC" .. (quickChecked and " - Chế độ nhanh" or ""),
-            Duration = 3
+            Title = "Teleport",
+            Content = "Đã dịch chuyển đến đảo đã chọn",
+            Duration = 2
         })
-        dialog:Destroy()
-    end)
-    
-    marineBtn.MouseButton1Click:Connect(function()
-        Fluent:Notify({
-            Title = "Đã chọn phe",
-            Content = "Bạn đã chọn HẢI QUÂN" .. (quickChecked and " - Chế độ nhanh" or ""),
-            Duration = 3
-        })
-        dialog:Destroy()
-    end)
-end
+    end
+})
 
-task.wait(1)
-ShowFactionDialog()
+Tabs.Teleport:AddToggle("AutoTeleport", {
+    Title = "Tự động dịch chuyển đến đảo",
+    Description = "Tự động bay đến đảo khi chọn",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Teleport", Content = "Đã bật auto teleport", Duration = 2 })
+    end
+end)
 
-do
-    local FarmMain = Tabs.Farm:AddSection("⚔️ AUTO FARM")
-    
-    Tabs.Farm:AddToggle("AutoFarmLevel", {
-        Title = "TỰ ĐỘNG FARM LEVEL",
-        Description = "Tự động đánh quái lấy kinh nghiệm",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Farm", Content = "Đã bật Auto Farm Level", Duration = 2 })
-        end
-    end)
-    
-    Tabs.Farm:AddToggle("AutoFarmAllBoss", {
-        Title = "TỰ ĐỘNG FARM TẤT CẢ BOSS",
-        Description = "Tự động tìm và đánh tất cả boss",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Farm", Content = "Đã bật Auto Farm All Boss", Duration = 2 })
-        end
-    end)
-    
-    local BossSection = Tabs.Farm:AddSection("🎯 BOSS SELECT")
-    
-    Tabs.Farm:AddDropdown("BossSelect", {
-        Title = "CHỌN BOSS CẦN FARM",
-        Values = {
-            "The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert",
-            "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral",
-            "Wysper", "Darkbeard", "Rip_Indra", "Dough King", "All Bosses"
-        },
-        Default = 1
-    }):OnChanged(function(value)
-        Fluent:Notify({ Title = "Boss", Content = "Đã chọn: " .. value, Duration = 1.5 })
-    end)
-    
-    Tabs.Farm:AddToggle("AutoFarmBoss", {
-        Title = "TỰ ĐỘNG FARM BOSS",
-        Description = "Farm boss đã chọn ở trên",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Boss Farm", Content = "Đã bật Auto Farm Boss", Duration = 2 })
-        end
-    end)
-    
-    local MiscFarm = Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
-    
-    Tabs.Farm:AddToggle("AutoFactory", {
-        Title = "TỰ ĐỘNG ĐÁNH NHÀ MÁY",
-        Description = "Auto Farm Factory",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Factory", Content = "Đã bật Auto Factory", Duration = 2 })
-        end
-    end)
-    
-    Tabs.Farm:AddToggle("AutoPiratesRaid", {
-        Title = "TỰ ĐỘNG ĐÁNH TẬP KÍCH HẢI TẶC",
-        Description = "Auto Farm Pirates Raid",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Raid", Content = "Đã bật Auto Pirates Raid", Duration = 2 })
-        end
-    end)
-    
-    Tabs.Farm:AddToggle("AutoRipIndra", {
-        Title = "TỰ ĐỘNG ĐÁNH RIP_INDRA",
-        Description = "Auto Farm Rip_Indra",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Rip_Indra", Content = "Đã bật Auto Rip_Indra", Duration = 2 })
-        end
-    end)
-    
-    Tabs.Farm:AddToggle("AutoDarkbeard", {
-        Title = "TỰ ĐỘNG ĐÁNH DARKBEARD",
-        Description = "Auto Farm Darkbeard (Râu Đen)",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Darkbeard", Content = "Đã bật Auto Darkbeard", Duration = 2 })
-        end
-    end)
-    
-    Tabs.Farm:AddToggle("AutoDoughKing", {
-        Title = "TỰ ĐỘNG ĐÁNH DOUGH KING",
-        Description = "Auto Farm Dough King",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Dough King", Content = "Đã bật Auto Dough King", Duration = 2 })
-        end
-    end)
-end
+Tabs.FruitRaid:AddSection("🍎 FRUIT")
 
-do
-    local ESPMain = Tabs.ESP:AddSection("🔍 CÀI ĐẶT ESP")
-    
-    Tabs.ESP:AddToggle("ESPBloxFruit", {
-        Title = "ĐỊNH VỊ TRÁI BLOX",
-        Description = "Hiển thị vị trí trái Blox",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "ESP", Content = "Đã bật ESP Blox Fruit", Duration = 2 })
-        end
-    end)
-    
-    Tabs.ESP:AddToggle("ESPPlayer", {
-        Title = "ĐỊNH VỊ NGƯỜI CHƠI",
-        Description = "Hiển thị vị trí người chơi",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "ESP", Content = "Đã bật ESP Player", Duration = 2 })
-        end
-    end)
-    
-    Tabs.ESP:AddToggle("ESPIsland", {
-        Title = "ĐỊNH VỊ ISLAND (ĐẢO)",
-        Description = "Hiển thị tên các đảo",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "ESP", Content = "Đã bật ESP Island", Duration = 2 })
-        end
-    end)
-    
-    Tabs.ESP:AddToggle("ESPChest", {
-        Title = "ĐỊNH VỊ CHEST (RƯƠNG)",
-        Description = "Hiển thị vị trí rương",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "ESP", Content = "Đã bật ESP Chest", Duration = 2 })
-        end
-    end)
-    
-    Tabs.ESP:AddToggle("ESPBerry", {
-        Title = "ĐỊNH VỊ TRÁI BERRY",
-        Description = "Hiển thị vị trí trái Berry",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "ESP", Content = "Đã bật ESP Berry", Duration = 2 })
-        end
-    end)
-    
-    Tabs.ESP:AddDropdown("ESPColor", {
-        Title = "MÀU ESP",
-        Values = {"Đỏ", "Xanh Dương", "Xanh Lá", "Vàng", "Tím", "Hồng"},
-        Default = 1
-    })
-end
+Tabs.FruitRaid:AddToggle("AutoSpinFruit", {
+    Title = "Tự động quay trái blox",
+    Description = "Tự động spin trái Blox",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Fruit", Content = "Đã bật auto spin fruit", Duration = 2 })
+    end
+end)
 
-do
-    local TeleMain = Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
-    
-    Tabs.Teleport:AddDropdown("IslandSelect", {
-        Title = "CHỌN ĐẢO",
-        Values = {
-            "Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village",
-            "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands",
-            "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard",
-            "Sea 2 - Snow Mountain", "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree"
-        },
-        Default = 1
-    })
-    
-    Tabs.Teleport:AddButton({
-        Title = "DỊCH CHUYỂN NGAY",
-        Description = "Click để dịch chuyển đến đảo đã chọn",
-        Callback = function()
-            Fluent:Notify({
-                Title = "Teleport",
-                Content = "Đã dịch chuyển đến đảo đã chọn",
-                Duration = 2
-            })
-        end
-    })
-    
-    Tabs.Teleport:AddToggle("AutoTeleport", {
-        Title = "TỰ ĐỘNG DỊCH CHUYỂN ĐẾN ĐẢO",
-        Description = "Tự động bay đến đảo khi chọn",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Auto Teleport", Content = "Đã bật Auto Teleport", Duration = 2 })
-        end
-    end)
-end
+Tabs.FruitRaid:AddToggle("AutoSaveFruit", {
+    Title = "Tự động lưu trái blox",
+    Description = "Tự động lưu trái vào kho",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Fruit", Content = "Đã bật auto save fruit", Duration = 2 })
+    end
+end)
 
-do
-    local FruitSection = Tabs.FruitRaid:AddSection("🍎 FRUIT")
-    
-    Tabs.FruitRaid:AddToggle("AutoSpinFruit", {
-        Title = "TỰ ĐỘNG QUAY TRÁI BLOX",
-        Description = "Tự động spin trái Blox",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Spin", Content = "Đã bật Auto Spin Fruit", Duration = 2 })
-        end
-    end)
-    
-    Tabs.FruitRaid:AddToggle("AutoSaveFruit", {
-        Title = "TỰ ĐỘNG LƯU TRÁI BLOX",
-        Description = "Tự động lưu trái vào kho",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Save", Content = "Đã bật Auto Save Fruit", Duration = 2 })
-        end
-    end)
-    
-    Tabs.FruitRaid:AddToggle("AutoCollectFruit", {
-        Title = "TỰ ĐỘNG BAY ĐẾN TRÁI BLOX",
-        Description = "Tự động bay đến trái Blox trên map",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Collect", Content = "Đã bật Auto Collect Fruit", Duration = 2 })
-        end
-    end)
-    
-    local RaidSection = Tabs.FruitRaid:AddSection("⚡ RAID")
-    
-    Tabs.FruitRaid:AddDropdown("ChipSelect", {
-        Title = "CHỌN CHIP RAID",
-        Values = {"Flame Chip", "Ice Chip", "Quake Chip", "Light Chip", "Dark Chip", "String Chip", "Rumble Chip", "Magma Chip", "Buddha Chip", "Dough Chip"},
-        Default = 1
-    })
-    
-    Tabs.FruitRaid:AddToggle("AutoBuyChip", {
-        Title = "TỰ ĐỘNG MUA CHIP",
-        Description = "Tự động mua chip raid",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Buy Chip", Content = "Đã bật Auto Buy Chip", Duration = 2 })
-        end
-    end)
-    
-    Tabs.FruitRaid:AddToggle("AutoRaid", {
-        Title = "TỰ ĐỘNG TẬP KÍCH",
-        Description = "Tự động vào raid",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Raid", Content = "Đã bật Auto Raid", Duration = 2 })
-        end
-    end)
-    
-    Tabs.FruitRaid:AddToggle("AutoAwaken", {
-        Title = "TỰ ĐỘNG THỨC TỈNH",
-        Description = "Tự động awaken fruit",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Awaken", Content = "Đã bật Auto Awaken", Duration = 2 })
-        end
-    end)
-    
-    Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {
-        Title = "TỰ ĐỘNG LẤY TRÁI ÍT TIỀN",
-        Description = "Lấy trái giá rẻ từ kho lưu trữ",
-        Default = false
-    }):OnChanged(function(value)
-        if value then
-            Fluent:Notify({ Title = "Storage", Content = "Đã bật Auto Get Cheap Fruit", Duration = 2 })
-        end
-    end)
-end
+Tabs.FruitRaid:AddToggle("AutoCollectFruit", {
+    Title = "Tự động bay đến trái blox",
+    Description = "Tự động bay đến trái Blox trên map",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Fruit", Content = "Đã bật auto collect fruit", Duration = 2 })
+    end
+end)
 
-Fluent:Notify({
-    Title = "Saidepchiu Hub",
-    Content = "Đã tải thành công!",
-    Duration = 3
-})"Flame Chip", "Ice Chip", "Quake Chip", "Light Chip", "Dark Chip", "String Chip", "Rumble Chip", "Magma Chip", "Buddha Chip", "Dough Chip"},
-        Default = 1
-    })
-    
-    CreateCustomToggle(Tabs.FruitRaid, "TỰ ĐỘNG MUA CHIP", "Tự động mua chip raid", function(state)
-        if state then
-            Fluent:Notify({ Title = "Buy Chip", Content = "Đã bật Auto Buy Chip", Duration = 2 })
-        end
-    end)
-    
-    CreateCustomToggle(Tabs.FruitRaid, "TỰ ĐỘNG TẬP KÍCH", "Tự động vào raid", function(state)
-        if state then
-            Fluent:Notify({ Title = "Raid", Content = "Đã bật Auto Raid", Duration = 2 })
-        end
-    end)
-    
-    CreateCustomToggle(Tabs.FruitRaid, "TỰ ĐỘNG THỨC TỈNH", "Tự động awaken fruit", function(state)
-        if state then
-            Fluent:Notify({ Title = "Awaken", Content = "Đã bật Auto Awaken", Duration = 2 })
-        end
-    end)
-    
-    CreateCustomToggle(Tabs.FruitRaid, "TỰ ĐỘNG LẤY TRÁI ÍT TIỀN", "Lấy trái giá rẻ từ kho lưu trữ", function(state)
-        if state then
-            Fluent:Notify({ Title = "Storage", Content = "Đã bật Auto Get Cheap Fruit", Duration = 2 })
-        end
-    end)
-end
+Tabs.FruitRaid:AddSection("⚡ RAID")
 
--- Khởi tạo SaveManager
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
+Tabs.FruitRaid:AddDropdown("ChipSelect", {
+    Title = "Chọn chip raid",
+    Values = {"Flame Chip", "Ice Chip", "Quake Chip", "Light Chip", "Dark Chip", "String Chip", "Rumble Chip", "Magma Chip", "Buddha Chip", "Dough Chip"},
+    Default = 1,
+    Description = "Chọn loại chip để mua"
+})
 
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({})
-InterfaceManager:SetFolder("SaidepchiuHub")
-SaveManager:SetFolder("SaidepchiuHub/BloxFruits")
+Tabs.FruitRaid:AddToggle("AutoBuyChip", {
+    Title = "Tự động mua chip",
+    Description = "Tự động mua chip raid",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Raid", Content = "Đã bật auto buy chip", Duration = 2 })
+    end
+end)
 
-SaveManager:BuildConfigSection(Tabs.Settings)
-InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+Tabs.FruitRaid:AddToggle("AutoRaid", {
+    Title = "Tự động tập kích",
+    Description = "Tự động vào raid",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Raid", Content = "Đã bật auto raid", Duration = 2 })
+    end
+end)
 
-Window:SelectTab(1)
+Tabs.FruitRaid:AddToggle("AutoAwaken", {
+    Title = "Tự động thức tỉnh",
+    Description = "Tự động awaken fruit",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Raid", Content = "Đã bật auto awaken", Duration = 2 })
+    end
+end)
+
+Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {
+    Title = "Tự động lấy trái blox ít tiền",
+    Description = "Lấy trái giá rẻ từ kho lưu trữ",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        Fluent:Notify({ Title = "Storage", Content = "Đã bật auto get cheap fruit", Duration = 2 })
+    end
+end)
 
 Fluent:Notify({
     Title = "Saidepchiu Hub",
