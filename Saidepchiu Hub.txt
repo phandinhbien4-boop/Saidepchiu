@@ -2,23 +2,6 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game:GetService("CoreGui")
-
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 80, 0, 35)
-toggleBtn.Position = UDim2.new(0, 10, 0, 10)
-toggleBtn.Text = "OFF"
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 16
-toggleBtn.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 5)
-corner.Parent = toggleBtn
-
 local Window = Fluent:CreateWindow({
     Title = "Saidepchiu Hub - By Biendepzai",
     SubTitle = "Blox Fruits",
@@ -31,19 +14,6 @@ local Window = Fluent:CreateWindow({
     ShowMinimize = true,
     ShowClose = true
 })
-
-local menuVisible = true
-
-toggleBtn.MouseButton1Click:Connect(function()
-    if menuVisible then
-        Window:Hide()
-        toggleBtn.Text = "ON"
-    else
-        Window:Show()
-        toggleBtn.Text = "OFF"
-    end
-    menuVisible = not menuVisible
-end)
 
 local Tabs = {
     Farm = Window:AddTab({ Title = "Farm", Icon = "rbxassetid://4483345998" }),
@@ -96,6 +66,6 @@ Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái
 
 Fluent:Notify({
     Title = "Saidepchiu Hub",
-    Content = "Đã tải thành công! Nút ON/OFF màu đen góc trái",
+    Content = "Đã tải thành công!",
     Duration = 3
 })
