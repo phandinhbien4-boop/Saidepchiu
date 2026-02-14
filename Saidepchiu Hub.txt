@@ -1,137 +1,40 @@
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local UIStroke = Instance.new("UIStroke")
-local Title = Instance.new("TextLabel")
-local SubTitle = Instance.new("TextLabel")
-local Status = Instance.new("TextLabel")
+local function ServerHop()
+    local HttpService = game:GetService("HttpService")
+    local TeleportService = game:GetService("TeleportService")
+    local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+    for _, s in pairs(Servers.data) do
+        if s.playing < s.maxPlayers and s.id ~= game.JobId then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id)
+            break
+        end
+    end
+end
 
-getgenv().Config = {
-    ["Hide UI"] = false,
-    ["White Screen"] = true,
-    ["Reset Teleport"] = {
-        ["Enabled"] = false,
-        ["Delay Reset"] = 3,
-        ["Item Dont Reset"] = {
-            ["Fruit"] = {
-                ["Enabled"] = true,
-                ["All Fruit"] = true, 
-                ["Select Fruit"] = {["Enabled"] = false, ["Fruit"] = {}},
-            },
-        },
-    },
-    ["Lock Fps"] = {["Enabled"] = false, ["FPS"] = 30},
-    ["Get Items"] = {
-        ["Saber"] = true,
-        ["Godhuman"] =  true,
-        ["Skull Guitar"] = true,
-        ["Mirror Fractal"] = true,
-        ["Cursed Dual Katana"] = true,
-        ["Upgrade Race V2-V3"] = true,
-        ["Auto Pull Lever"] = true,
-        ["Shark Anchor"] = true,
-    },
-    ["Get Rare Items"] = {
-        ["Rengoku"] = false,
-        ["Dragon Trident"] = false, 
-        ["Pole (1st Form)"] = false,
-        ["Gravity Blade"]  = false,
-    },
-    ["Farm Fragments"] = {["Enabled"]  = false, ["Fragment"] = 50000},
-    ["Auto Chat"] = {["Enabled"] = false, ["Text"] = ""},
-    ["Auto Summon Rip Indra"] = true, 
-    ["Select Hop"] = {
-        ["Hop Server If Have Player Near"] = false, 
-        ["Hop Find Rip Indra Get Valkyrie Helm or Get Tushita"] = true, 
-        ["Hop Find Dough King Get Mirror Fractal"] = false,
-        ["Hop Find Raids Castle [CDK]"] = true,
-        ["Hop Find Cake Queen [CDK]"] = true,
-        ["Hop Find Soul Reaper [CDK]"] = true,
-        ["Hop Find Darkbeard [SG]"] = true,
-        ["Hop Find Mirage [ Pull Lever ]"] = false,
-    },
-    ["Farm Mastery"] = {["Melee"] = false, ["Sword"] = false},
-    ["Buy Haki"] = {
-        ["Enhancement"] = false,
-        ["Skyjump"] = true,
-        ["Flash Step"] = true,
-        ["Observation"] = true,
-    },
-    ["Sniper Fruit Shop"] = {
-        ["Enabled"] = true,
-        ["Fruit"] = {"Leopard-Leopard","Kitsune-Kitsune","Dragon-Dragon","Yeti-Yeti","Gas-Gas"},
-    },
-    ["Lock Fruit"] = {},
-    ["Webhook"] = {["Enabled"] = false, ["WebhookUrl"] = ""}
-}
+local function AutoFruit()
+    while task.wait(0.5) do
+        local fruitFound = false
+        for _, v in pairs(game.Workspace:GetChildren()) do
+            if v:IsA("Tool") and (string.find(v.Name, "Fruit") or v:FindFirstChild("Handle")) then
+                fruitFound = true
+                local hrp = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+                hrp.CFrame = v.Handle.CFrame
+                task.wait(0.2)
+            end
+        end
+        
+        for _, item in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+            if string.find(item.Name, "Fruit") then
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", item.Name, item)
+            end
+        end
 
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.Name = "SaidepchiuKaitun"
+        if not fruitFound then
+            task.wait(2)
+            ServerHop()
+        end
+    end
+end
 
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-MainFrame.BackgroundTransparency = 0.1
-MainFrame.Position = UDim2.new(0.5, -150, 0.4, -50)
-MainFrame.Size = UDim2.new(0, 300, 0, 100)
-
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
-
-UIStroke.Color = Color3.fromRGB(255, 255, 255)
-UIStroke.Thickness = 2
-UIStroke.Parent = MainFrame
-
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0.5, 0)
-Title.Text = "KAITUN SAIDEPCHIU HUB"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
-
-SubTitle.Parent = MainFrame
-SubTitle.Position = UDim2.new(0, 0, 0.4, 0)
-SubTitle.Size = UDim2.new(1, 0, 0.3, 0)
-SubTitle.Text = "By Biendepzai"
-SubTitle.TextColor3 = Color3.fromRGB(220, 220, 220)
-SubTitle.Font = Enum.Font.Gotham
-SubTitle.TextSize = 13
-
-Status.Parent = MainFrame
-Status.Position = UDim2.new(0, 0, 0.7, 0)
-Status.Size = UDim2.new(1, 0, 0.3, 0)
-Status.Text = "Status: Đang chạy Kaitun (Premium)..."
-Status.TextColor3 = Color3.fromRGB(0, 255, 127)
-Status.Font = Enum.Font.GothamSemibold
-Status.TextSize = 11
-
-local Watermark = Instance.new("TextLabel", ScreenGui)
-Watermark.Size = UDim2.new(0, 200, 0, 60)
-Watermark.Position = UDim2.new(1, -210, 1, -70)
-Watermark.BackgroundTransparency = 1
-Watermark.Text = "Saidepchiu Hub\nBy Biendepzai\nBiển\nGood Game"
-Watermark.TextColor3 = Color3.fromRGB(255, 255, 255)
-Watermark.Font = Enum.Font.GothamBold
-Watermark.TextSize = 14
-Watermark.TextXAlignment = Enum.TextXAlignment.Right
-
-local ToggleButton = Instance.new("ImageButton", ScreenGui)
-local BtnCorner = Instance.new("UICorner", ToggleButton)
-ToggleButton.Size = UDim2.new(0, 55, 0, 55)
-ToggleButton.Position = UDim2.new(0, 15, 0.85, 0)
-ToggleButton.Image = "rbxassetid://73480053684273"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
-ToggleButton.BackgroundTransparency = 0.3
-BtnCorner.CornerRadius = UDim.new(0, 12)
-ToggleButton.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
-
-task.spawn(function()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local old = mt.__namecall
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "FireServer" and (self.Name:find("Check") or self.Name:find("Admin") or self.Name:find("Detection")) then return nil end
-        return old(self, ...)
-    end)
-end)
+if game:IsLoaded() then
+    spawn(AutoFruit)
+end
