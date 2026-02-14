@@ -24,11 +24,12 @@ local Tabs = {
 
 local Options = Fluent.Options
 
+-- Farm Tab
 Tabs.Farm:AddSection("⚔️ AUTO FARM")
 Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false})
 Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false})
 Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss cần farm", Values = {"The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert", "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral", "Wysper", "Darkbeard", "Rip_Indra", "Dough King"}, Default = 1})
-Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss", Default = false})
+Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss (theo lựa chọn)", Default = false})
 Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
 Tabs.Farm:AddToggle("AutoFactory", {Title = "Tự động đánh nhà máy", Default = false})
 Tabs.Farm:AddToggle("AutoPiratesRaid", {Title = "Tự động đánh tập kích hải tặc", Default = false})
@@ -36,19 +37,22 @@ Tabs.Farm:AddToggle("AutoRipIndra", {Title = "Tự động đánh rip_indra", De
 Tabs.Farm:AddToggle("AutoDarkbeard", {Title = "Tự động đánh darkbeard", Default = false})
 Tabs.Farm:AddToggle("AutoDoughKing", {Title = "Tự động đánh dough king", Default = false})
 
+-- ESP Tab
 Tabs.ESP:AddSection("🔍 CÀI ĐẶT ESP")
 Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false})
 Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false})
 Tabs.ESP:AddToggle("ESPIsland", {Title = "Định vị island (đảo)", Default = false})
 Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest (rương)", Default = false})
 Tabs.ESP:AddToggle("ESPBerry", {Title = "Định vị trái berry", Default = false})
-Tabs.ESP:AddDropdown("ESPColor", {Title = "Màu esp", Values = {"Đỏ", "Xanh dương", "Xanh lá", "Vàng", "Tím", "Hồng"}, Default = 1})
+Tabs.ESP:AddDropdown("ESPColor", {Title = "Màu esp", Values = {"Đỏ", "Xanh dương", "Xanh lá", "Vàng", "Tím", "Hồng", "Trắng"}, Default = 1})
 
+-- Teleport Tab
 Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
 Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {"Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village", "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands", "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard", "Sea 2 - Snow Mountain", "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree", "Sea 3 - Turtle Island", "Sea 3 - Castle on the Sea"}, Default = 1})
-Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function() Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển", Duration = 2}) end})
+Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function() Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển đến đảo đã chọn", Duration = 2}) end})
 Tabs.Teleport:AddToggle("AutoTeleport", {Title = "Tự động dịch chuyển đến đảo", Default = false})
 
+-- Fruit/Raid Tab
 Tabs.FruitRaid:AddSection("🍎 FRUIT")
 Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái blox", Default = false})
 Tabs.FruitRaid:AddToggle("AutoSaveFruit", {Title = "Tự động lưu trái blox", Default = false})
@@ -58,6 +62,10 @@ Tabs.FruitRaid:AddDropdown("ChipSelect", {Title = "Chọn chip raid", Values = {
 Tabs.FruitRaid:AddToggle("AutoBuyChip", {Title = "Tự động mua chip", Default = false})
 Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động tập kích", Default = false})
 Tabs.FruitRaid:AddToggle("AutoAwaken", {Title = "Tự động thức tỉnh", Default = false})
-Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái blox ít tiền", Default = false})
+Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái blox ít tiền trong kho", Default = false})
 
-Fluent:Notify({Title = "Saidepchiu Hub", Content = "Đã tải thành công!", Duration = 3})
+Fluent:Notify({
+    Title = "Saidepchiu Hub",
+    Content = "Đã tải thành công!",
+    Duration = 3
+})
