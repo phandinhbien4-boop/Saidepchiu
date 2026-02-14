@@ -1,7 +1,21 @@
-_G.AutoFarm = true
-_G.FastAttack = true
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
-repeat task.wait() until game:IsLoaded()
+local Window = Fluent:CreateWindow({
+    Title = "Bảo Bối Hub",
+    SubTitle = "Blox Fruits 2026",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Auto Farm", Icon = "rbxassetid://73480053684273" })
+}
+
+_G.AutoFarm = false
+_G.FastAttack = true
 
 local function JoinTeam()
     pcall(function()
@@ -13,7 +27,8 @@ end
 
 local function Tween(Target)
     local Character = game.Players.LocalPlayer.Character
-    local RootPart = Character:WaitForChild("HumanoidRootPart")
+    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
+    local RootPart = Character.HumanoidRootPart
     local Distance = (RootPart.Position - Target.p).Magnitude
     local Speed = 300
     game:GetService("TweenService"):Create(RootPart, TweenInfo.new(Distance/Speed, Enum.EasingStyle.Linear), {CFrame = Target}):Play()
@@ -24,21 +39,34 @@ local function Attack()
     game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
 end
 
+Tabs.Main:AddToggle("AutoFarmToggle", {
+    Title = "Auto Farm Level",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFarm = Value
+    end
+})
+
 spawn(function()
     JoinTeam()
-    while _G.AutoFarm do
+    while true do
         task.wait(0.1)
-        pcall(function()
-            local Enemies = game.Workspace.Enemies:GetChildren()
-            for _, v in pairs(Enemies) do
-                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    repeat
-                        task.wait()
-                        Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
-                        if _G.FastAttack then Attack() end
-                    until not v.Parent or v.Humanoid.Health <= 0 or not _G.AutoFarm
+        if _G.AutoFarm then
+            pcall(function()
+                local Enemies = game.Workspace.Enemies:GetChildren()
+                for _, v in pairs(Enemies) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        repeat
+                            task.wait()
+                            -- Khoảng cách (0, 10, 0) để quái không đánh trúng
+                            Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0))
+                            if _G.FastAttack then Attack() end
+                        until not v.Parent or v.Humanoid.Health <= 0 or not _G.AutoFarm
+                    end
                 end
-            end
-        end)
+            end)
+        end
     end
 end)
+
+Window:SelectTab(1)
