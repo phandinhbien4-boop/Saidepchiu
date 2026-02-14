@@ -15,6 +15,30 @@ local Window = Fluent:CreateWindow({
     ShowClose = true
 })
 
+-- Nút bật/tắt menu ở góc màn hình
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 100, 0, 40)
+ToggleButton.Position = UDim2.new(0, 10, 0, 10)
+ToggleButton.Text = "MENU"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextSize = 18
+ToggleButton.Parent = game:GetService("CoreGui")
+
+local menuVisible = true
+
+ToggleButton.MouseButton1Click:Connect(function()
+    menuVisible = not menuVisible
+    if menuVisible then
+        Window:Show()
+        ToggleButton.Text = "MENU"
+    else
+        Window:Hide()
+        ToggleButton.Text = "SHOW"
+    end
+end)
+
 local Tabs = {
     Farm = Window:AddTab({ Title = "Farm", Icon = "rbxassetid://4483345998" }),
     ESP = Window:AddTab({ Title = "ESP", Icon = "rbxassetid://4483345998" }),
@@ -29,7 +53,7 @@ Tabs.Farm:AddSection("⚔️ AUTO FARM")
 Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false})
 Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false})
 Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss cần farm", Values = {"The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert", "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral", "Wysper", "Darkbeard", "Rip_Indra", "Dough King"}, Default = 1})
-Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss (theo lựa chọn)", Default = false})
+Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss", Default = false})
 Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
 Tabs.Farm:AddToggle("AutoFactory", {Title = "Tự động đánh nhà máy", Default = false})
 Tabs.Farm:AddToggle("AutoPiratesRaid", {Title = "Tự động đánh tập kích hải tặc", Default = false})
@@ -62,10 +86,10 @@ Tabs.FruitRaid:AddDropdown("ChipSelect", {Title = "Chọn chip raid", Values = {
 Tabs.FruitRaid:AddToggle("AutoBuyChip", {Title = "Tự động mua chip", Default = false})
 Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động tập kích", Default = false})
 Tabs.FruitRaid:AddToggle("AutoAwaken", {Title = "Tự động thức tỉnh", Default = false})
-Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái blox ít tiền trong kho", Default = false})
+Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái blox ít tiền", Default = false})
 
 Fluent:Notify({
     Title = "Saidepchiu Hub",
-    Content = "Đã tải thành công!",
+    Content = "Đã tải thành công! Bấm nút MENU để ẩn/hiện",
     Duration = 3
 })
