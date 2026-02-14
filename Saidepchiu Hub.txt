@@ -1,73 +1,222 @@
+-- Saidepchiu Hub - By Biendepzai
+-- Version: 2026 Ultimate (Level 2800, Control Update + Tiger Update + Christmas Event)
+-- Anti-Ban System: Always Active (Kể cả khi tắt menu)
+
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local Player = game:GetService("Players").LocalPlayer
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local VirtualUser = game:GetService("VirtualUser")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Stats = game:GetService("Stats")
+local NetworkClient = game:GetService("NetworkClient")
+local TeleportService = game:GetService("TeleportService")
 
+-- ==================== ANTI-BAN SYSTEM (LUÔN CHẠY NGẦM) ====================
+local AntiBan = {
+    Connections = {},
+    OriginalIndexes = {},
+    NetworkProxy = nil,
+    PingSpoof = nil
+}
+
+function AntiBan:Init()
+    -- 1. Spoof Network Ping (Giảm phát hiện fly/TP)
+    local oldPing = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+    self.PingSpoof = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local newPing = math.random(40, 80)
+            Stats.Network.ServerStatsItem["Data Ping"]:SetValue(newPing)
+        end)
+    end)
+    
+    -- 2. Fake Network Traffic (Làm nhiễu log)
+    for i = 1, 5 do
+        self.Connections[i] = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("__mock"):FireServer("keepalive")
+            end)
+        end)
+    end
+    
+    -- 3. Anti-Kick (Chặn lệnh kick từ server)
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local args = {...}
+        local method = getnamecallmethod()
+        
+        if method == "Kick" then
+            return nil
+        end
+        if method == "FireServer" and tostring(self):find("Teleport") then
+            return nil
+        end
+        
+        return oldNamecall(self, ...)
+    end)
+    
+    -- 4. Spoof Character Movement (Tránh phát hiện speed hack)
+    local oldWalkSpeed = game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed
+    self.Connections[6] = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+                if Player.Character.Humanoid.WalkSpeed > 24 then
+                    Player.Character.Humanoid.WalkSpeed = oldWalkSpeed
+                end
+            end
+        end)
+    end)
+    
+    -- 5. Fake Chat Spam (Làm nhiễu log chat)
+    self.Connections[7] = RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local rnd = math.random(1, 100)
+            if rnd == 1 then
+                ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest"):FireServer("/hub", "All")
+            end
+        end)
+    end)
+    
+    -- 6. Anti-Log (Xóa log hành động)
+    local oldLog = debug.getregistry().lua_print
+    debug.getregistry().lua_print = function(...)
+        local args = {...}
+        for _, v in pairs(args) do
+            if type(v) == "string" and (v:find("Teleport") or v:find("Speed") or v:find("Anti") or v:find("Exploit")) then
+                return nil
+            end
+        end
+        return oldLog(...)
+    end
+    
+    -- 7. Random Delay Between Actions (Tránh pattern)
+    local oldWait = wait
+    wait = function(t)
+        if t then
+            t = t + math.random(-50, 50)/1000
+            if t < 0 then t = 0.01 end
+        end
+        return oldWait(t)
+    end
+    
+    -- 8. Spoof FPS (Tránh phát hiện)
+    self.Connections[8] = RunService.RenderStepped:Connect(function()
+        pcall(function()
+            local fps = math.random(55, 65)
+            setfps(fps)
+        end)
+    end)
+    
+    -- 9. Clean Memory (Xóa dấu vết)
+    self.Connections[9] = RunService.Stepped:Connect(function()
+        pcall(function()
+            collectgarbage()
+        end)
+    end)
+    
+    print("✅ Anti-Ban System Activated (Running 24/7)")
+end
+
+function AntiBan:Cleanup()
+    for _, conn in pairs(self.Connections) do
+        conn:Disconnect()
+    end
+    if self.PingSpoof then self.PingSpoof:Disconnect() end
+end
+
+-- ==================== NÚT ON/OFF ====================
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleBtn = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+local UIStroke = Instance.new("UIStroke")
+local Shadow = Instance.new("ImageLabel")
+
+ScreenGui.Name = "Saidepchiu_UI"
+ScreenGui.Parent = CoreGui
+ScreenGui.DisplayOrder = 999
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ToggleBtn.Name = "ControlBtn"
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
+ToggleBtn.Position = UDim2.new(0, 15, 0.5, -35)
+ToggleBtn.Size = UDim2.new(0, 70, 0, 70)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Text = "ON"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 20
+ToggleBtn.Draggable = true
+ToggleBtn.Active = true
+ToggleBtn.AutoButtonColor = false
+ToggleBtn.BackgroundTransparency = 0.1
+
+UICorner.CornerRadius = UDim.new(0, 25)
+UICorner.Parent = ToggleBtn
+UIStroke.Thickness = 3
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Parent = ToggleBtn
+
+-- ==================== KHỞI TẠO ANTI-BAN ====================
+AntiBan:Init()
+
+-- ==================== GIAO DIỆN CHÍNH ====================
 local Window = Fluent:CreateWindow({
     Title = "Saidepchiu Hub - By Biendepzai",
-    SubTitle = "Blox Fruits",
+    SubTitle = "Blox Fruits 2026 | Level 2800 | Anti-Ban Active",
     TabWidth = 160,
-    Size = UDim2.fromOffset(600, 500),
+    Size = UDim2.fromOffset(680, 580),
     Acrylic = true,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleBtn = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
-local UIStroke = Instance.new("UIStroke")
-
-ScreenGui.Name = "Saidepchiu_UI"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.DisplayOrder = 999
-
-ToggleBtn.Name = "ControlBtn"
-ToggleBtn.Parent = ScreenGui
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-ToggleBtn.Position = UDim2.new(0, 15, 0.5, -30)
-ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.Text = "ON"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 16
-ToggleBtn.Draggable = true
-ToggleBtn.Active = true
-
-UICorner.CornerRadius = UDim.new(0, 15)
-UICorner.Parent = ToggleBtn
-UIStroke.Thickness = 2
-UIStroke.Color = Color3.fromRGB(255, 255, 255)
-UIStroke.Parent = ToggleBtn
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    Window:Minimize()
-    if ToggleBtn.Text == "ON" then
-        ToggleBtn.Text = "OFF"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    else
-        ToggleBtn.Text = "ON"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-    end
-end)
-
 local Tabs = {
-    Farm = Window:AddTab({ Title = "Farm", Icon = "home" }),
+    Farm = Window:AddTab({ Title = "Farm", Icon = "swords" }),
     ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map" }),
+    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map-pin" }),
     FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "apple" })
 }
 
 local Options = Fluent.Options
+local playerLevel = 1
+local playerFragments = 0
+local playerBeli = 0
+local currentSea = 1
 
-local function getPlayerLevel()
-    local level = 1
+local function updatePlayerStats()
     pcall(function()
-        level = Player.Data.Level.Value
+        playerLevel = Player.Data.Level.Value
+        playerFragments = Player.Data.Fragments.Value
+        playerBeli = Player.Data.Beli.Value
+        if Player.PlayerGui.Main.SeaIcon then
+            local seaText = Player.PlayerGui.Main.SeaIcon.SeaText.Text
+            if seaText:find("First") then currentSea = 1
+            elseif seaText:find("Second") then currentSea = 2
+            elseif seaText:find("Third") then currentSea = 3 end
+        end
     end)
-    return level
+end
+
+local function safeTP(pos)
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        Player.Character.HumanoidRootPart.CFrame = pos
+    end
+end
+
+local function bringTarget(target)
+    pcall(function()
+        for _, v in pairs(target:GetChildren()) do
+            if v:IsA("Part") or v:IsA("MeshPart") or v:IsA("BasePart") then
+                v.CFrame = Player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            end
+        end
+    end)
 end
 
 local function getQuestMobs(level)
@@ -94,20 +243,80 @@ local function getQuestMobs(level)
     elseif level < 600 then return "Shanda"
     elseif level < 630 then return "Royal Squad"
     elseif level < 660 then return "Royal Soldier"
-    else return "Galley Pirate" end
+    elseif level < 700 then return "Galley Pirate"
+    elseif level < 725 then return "Raider"
+    elseif level < 750 then return "Mercenary"
+    elseif level < 775 then return "Swan Pirate"
+    elseif level < 800 then return "Marine Captain"
+    elseif level < 825 then return "Fishman Raider"
+    elseif level < 850 then return "Fishman Captain"
+    elseif level < 875 then return "Fishman Lord"
+    elseif level < 900 then return "Pirate Raider"
+    elseif level < 950 then return "Pirate Captain"
+    elseif level < 1000 then return "Pirate Lord"
+    elseif level < 1050 then return "Dark Raider"
+    elseif level < 1100 then return "Dark Captain"
+    elseif level < 1150 then return "Dark Lord"
+    elseif level < 1200 then return "Raider (Lava)"
+    elseif level < 1250 then return "Captain (Lava)"
+    elseif level < 1300 then return "Lord (Lava)"
+    elseif level < 1350 then return "Damaged Raider"
+    elseif level < 1400 then return "Damaged Captain"
+    elseif level < 1450 then return "Damaged Lord"
+    elseif level < 1500 then return "Awakened Raider"
+    elseif level < 1550 then return "Pirate Millionaire"
+    elseif level < 1600 then return "Pirate Billionaire"
+    elseif level < 1650 then return "Pirate Trillionaire"
+    elseif level < 1700 then return "Forest Pirate"
+    elseif level < 1750 then return "Musketeer Pirate"
+    elseif level < 1800 then return "Mercenary"
+    elseif level < 1850 then return "Swan Pirate"
+    elseif level < 1900 then return "Marine Captain"
+    elseif level < 1950 then return "Fishman Raider"
+    elseif level < 2000 then return "Fishman Captain"
+    elseif level < 2050 then return "Fishman Lord"
+    elseif level < 2100 then return "Pirate Raider"
+    elseif level < 2150 then return "Pirate Captain"
+    elseif level < 2200 then return "Pirate Lord"
+    elseif level < 2250 then return "Dark Raider"
+    elseif level < 2300 then return "Dark Captain"
+    elseif level < 2350 then return "Dark Lord"
+    elseif level < 2400 then return "Raider (Lava)"
+    elseif level < 2450 then return "Captain (Lava)"
+    elseif level < 2500 then return "Lord (Lava)"
+    elseif level < 2550 then return "Ghost Pirate"
+    elseif level < 2600 then return "Cursed Sailor"
+    elseif level < 2650 then return "Tyrant Soldier"
+    elseif level < 2700 then return "Tyrant Captain"
+    elseif level < 2750 then return "Tyrant General"
+    elseif level < 2800 then return "Tyrant Lord"
+    else return "Tyrant King" end
 end
 
+local bossList = {
+    -- Sea 1
+    "The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert",
+    "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral",
+    -- Sea 2
+    "Wysper", "Darkbeard", "Rip_Indra", "Cursed Captain", "Ice Admiral",
+    -- Sea 3
+    "Dough King", "Rip_Return", "Unbound Werewolf", "Tiger Emperor",
+    "Gas Boss", "Control Master"
+}
+
+-- ==================== AUTO FARM LEVEL ====================
 local farmLoop
-Tabs.Farm:AddSection("⚔️ AUTO FARM")
+Tabs.Farm:AddSection("⚔️ AUTO FARM LEVEL 1-2800")
 Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false}):OnChanged(function(val)
     if val then
         Fluent:Notify({Title = "Farm", Content = "Bắt đầu farm level", Duration = 2})
         farmLoop = RunService.Heartbeat:Connect(function()
             pcall(function()
-                local level = getPlayerLevel()
-                local mobName = getQuestMobs(level)
+                updatePlayerStats()
+                local mobName = getQuestMobs(playerLevel)
                 local nearestMob = nil
                 local nearestDist = math.huge
+                
                 for _, obj in pairs(Workspace:GetDescendants()) do
                     if obj:IsA("Model") and obj.Name == mobName and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
                         local hum = obj:FindFirstChild("Humanoid")
@@ -120,11 +329,10 @@ Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default
                         end
                     end
                 end
-                if nearestMob and nearestDist < 1000 then
-                    for _ = 1, 3 do
-                        nearestMob.HumanoidRootPart.CFrame = Player.Character.HumanoidRootPart.CFrame
-                    end
-                    Player.Character.HumanoidRootPart.CFrame = nearestMob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                
+                if nearestMob and nearestDist < 2000 then
+                    bringTarget(nearestMob)
+                    safeTP(nearestMob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 6))
                     task.wait(0.1)
                     VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
                 end
@@ -135,38 +343,108 @@ Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default
     end
 end)
 
-Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false})
-Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss cần farm", Values = {"The Gorilla King", "Bobby", "Jeremy", "Diamond", "Saber Expert", "Greybeard", "Strawberry", "Cake Queen", "Don Swan", "Smoke Admiral", "Wysper", "Darkbeard", "Rip_Indra", "Dough King"}, Default = 1})
-Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss", Default = false})
+-- ==================== AUTO FARM ALL BOSS ====================
+local allBossLoop
+Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false}):OnChanged(function(val)
+    if val then
+        Fluent:Notify({Title = "Boss", Content = "Bắt đầu farm all boss", Duration = 2})
+        allBossLoop = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                for _, bossName in ipairs(bossList) do
+                    for _, obj in pairs(Workspace:GetDescendants()) do
+                        if obj:IsA("Model") and obj.Name == bossName and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+                            local hum = obj:FindFirstChild("Humanoid")
+                            if hum and hum.Health > 0 then
+                                bringTarget(obj)
+                                safeTP(obj.HumanoidRootPart.CFrame * CFrame.new(0, 0, 8))
+                                task.wait(0.1)
+                                VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+        end)
+    else
+        if allBossLoop then allBossLoop:Disconnect() end
+    end
+end)
 
-Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
+Tabs.Farm:AddDropdown("BossSelect", {
+    Title = "Chọn boss cần farm",
+    Values = bossList,
+    Default = 1
+})
+
+local selectedBossLoop
+Tabs.Farm:AddToggle("AutoBoss", {Title = "Tự động farm boss (đã chọn)", Default = false}):OnChanged(function(val)
+    if val then
+        local bossName = Options.BossSelect.Value
+        Fluent:Notify({Title = "Boss", Content = "Farm " .. bossName, Duration = 2})
+        selectedBossLoop = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj.Name == bossName and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+                        local hum = obj:FindFirstChild("Humanoid")
+                        if hum and hum.Health > 0 then
+                            bringTarget(obj)
+                            safeTP(obj.HumanoidRootPart.CFrame * CFrame.new(0, 0, 8))
+                            task.wait(0.1)
+                            VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
+                            break
+                        end
+                    end
+                end
+            end)
+        end)
+    else
+        if selectedBossLoop then selectedBossLoop:Disconnect() end
+    end
+end)
+
+Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT (SỰ KIỆN)")
 Tabs.Farm:AddToggle("AutoFactory", {Title = "Tự động đánh nhà máy", Default = false})
 Tabs.Farm:AddToggle("AutoPiratesRaid", {Title = "Tự động đánh tập kích hải tặc", Default = false})
 Tabs.Farm:AddToggle("AutoRipIndra", {Title = "Tự động đánh rip_indra", Default = false})
 Tabs.Farm:AddToggle("AutoDarkbeard", {Title = "Tự động đánh darkbeard", Default = false})
 Tabs.Farm:AddToggle("AutoDoughKing", {Title = "Tự động đánh dough king", Default = false})
+Tabs.Farm:AddToggle("AutoRipReturn", {Title = "Tự động đánh Rip_Return (Update 28)", Default = false})
+Tabs.Farm:AddToggle("AutoUnboundWerewolf", {Title = "Tự động đánh Unbound Werewolf (Update 28)", Default = false})
+Tabs.Farm:AddToggle("AutoElfEvent", {Title = "Tự động farm Elf (Christmas Event 2025)", Default = false})
 
-local highlights = {}
+-- ==================== ESP PRO ====================
+local ESP = {}
 local espLoop
 
-function clearESP()
-    for _, v in pairs(highlights) do
-        pcall(function() v:Destroy() end)
+local function clearESP()
+    for _, v in pairs(ESP) do
+        pcall(function() 
+            if v.Line then v.Line:Remove() end
+            if v.Text then v.Text:Remove() end
+            if v.Highlight then v.Highlight:Destroy() end
+        end)
     end
-    highlights = {}
+    ESP = {}
 end
 
-function createESP(obj, color, name)
+local function createESP(obj, color, name, objType)
+    local espObj = {}
+    
     local highlight = Instance.new("Highlight")
     highlight.Adornee = obj
     highlight.FillColor = color
-    highlight.FillTransparency = 0.3
-    highlight.Parent = game:GetService("CoreGui")
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.OutlineTransparency = 0
+    highlight.Parent = CoreGui
+    espObj.Highlight = highlight
     
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.Size = UDim2.new(0, 150, 0, 50)
     billboard.Adornee = obj
-    billboard.Parent = highlight
+    billboard.AlwaysOnTop = true
+    billboard.Parent = CoreGui
     
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1, 0, 1, 0)
@@ -175,172 +453,56 @@ function createESP(obj, color, name)
     text.TextColor3 = Color3.fromRGB(255, 255, 255)
     text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     text.TextStrokeTransparency = 0
-    text.TextSize = 16
+    text.TextSize = 14
     text.Font = Enum.Font.GothamBold
     text.Parent = billboard
     
-    table.insert(highlights, highlight)
-    return highlight
+    espObj.Billboard = billboard
+    espObj.Text = text
+    espObj.Object = obj
+    espObj.Type = objType
+    
+    table.insert(ESP, espObj)
+    return espObj
 end
 
-Tabs.ESP:AddSection("🔍 CÀI ĐẶT ESP")
+local function createTracer(obj, color, name)
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = color
+    line.Thickness = 2
+    line.Transparency = 1
+    
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = Color3.fromRGB(255, 255, 255)
+    text.Center = true
+    text.Outline = true
+    text.Size = 16
+    text.Font = 3
+    
+    table.insert(ESP, {Line = line, Text = text, Object = obj, Name = name, Color = color, Type = "Tracer"})
+    return {Line = line, Text = text}
+end
+
+Tabs.ESP:AddSection("🔍 ESP PRO (HIGHLIGHT + TRACER + DISTANCE)")
 Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false}):OnChanged(function(val)
     if val then
         espLoop = RunService.RenderStepped:Connect(function()
-            clearESP()
             for _, obj in pairs(Workspace:GetDescendants()) do
                 if obj.Name:find("Fruit") or obj.Name:find("Banana") or obj.Name:find("Apple") then
-                    local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                    createESP(obj, Color3.fromRGB(255, 215, 0), "🍎 " .. math.floor(dist) .. "m")
+                    local exists = false
+                    for _, v in pairs(ESP) do
+                        if v.Object == obj then exists = true break end
+                    end
+                    if not exists then
+                        createTracer(obj, Color3.fromRGB(255, 215, 0), "🍎")
+                    end
                 end
             end
-        end)
-    else
-        if espLoop then espLoop:Disconnect() end
-        clearESP()
-    end
-end)
-
-Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false}):OnChanged(function(val)
-    if val then
-        espLoop = RunService.RenderStepped:Connect(function()
-            clearESP()
-            for _, plr in pairs(Players:GetPlayers()) do
-                if plr ~= Player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                    local dist = (plr.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                    createESP(plr.Character, Color3.fromRGB(255, 0, 0), plr.Name .. " [" .. math.floor(dist) .. "m]")
-                end
-            end
-        end)
-    else
-        if espLoop then espLoop:Disconnect() end
-        clearESP()
-    end
-end)
-
-Tabs.ESP:AddToggle("ESPIsland", {Title = "Định vị island (đảo)", Default = false})
-Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest (rương)", Default = false}):OnChanged(function(val)
-    if val then
-        espLoop = RunService.RenderStepped:Connect(function()
-            clearESP()
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if obj.Name == "Chest1" or obj.Name == "Chest2" or obj.Name == "Chest3" then
-                    local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                    createESP(obj, Color3.fromRGB(0, 255, 0), "📦 " .. math.floor(dist) .. "m")
-                end
-            end
-        end)
-    else
-        if espLoop then espLoop:Disconnect() end
-        clearESP()
-    end
-end)
-
-Tabs.ESP:AddToggle("ESPBerry", {Title = "Định vị trái berry", Default = false}):OnChanged(function(val)
-    if val then
-        espLoop = RunService.RenderStepped:Connect(function()
-            clearESP()
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if obj.Name:find("Berry") or obj.Name:find("Beli") then
-                    local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                    createESP(obj, Color3.fromRGB(255, 255, 0), "💰 " .. math.floor(dist) .. "m")
-                end
-            end
-        end)
-    else
-        if espLoop then espLoop:Disconnect() end
-        clearESP()
-    end
-end)
-
-Tabs.ESP:AddDropdown("ESPColor", {Title = "Màu esp", Values = {"Đỏ", "Xanh dương", "Xanh lá", "Vàng", "Tím", "Hồng", "Trắng"}, Default = 1})
-
-Tabs.Teleport:AddSection("🌍 DỊCH CHUYỂN ĐẾN ĐẢO")
-Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {
-    "Sea 1 - Marine Start", "Sea 1 - Middle Town", "Sea 1 - Jungle", "Sea 1 - Pirate Village",
-    "Sea 1 - Desert", "Sea 1 - Frozen Village", "Sea 1 - Colosseum", "Sea 1 - Skylands",
-    "Sea 2 - Kingdom of Rose", "Sea 2 - Green Zone", "Sea 2 - Cafe", "Sea 2 - Graveyard",
-    "Sea 2 - Snow Mountain", "Sea 2 - Hot and Cold", "Sea 2 - Cursed Ship", "Sea 2 - Ice Castle",
-    "Sea 2 - Forgotten Island", "Sea 2 - Usoapp Island", "Sea 2 - Mansion", "Sea 2 - Floating Turtle",
-    "Sea 3 - Port Town", "Sea 3 - Hydra Island", "Sea 3 - Great Tree", "Sea 3 - Turtle Island",
-    "Sea 3 - Castle on the Sea", "Sea 3 - Sea of Treats", "Sea 3 - Haunted Castle"
-}, Default = 1})
-
-Tabs.Teleport:AddButton({Title = "Dịch chuyển ngay", Callback = function()
-    local selected = Options.IslandSelect.Value
-    local islandPos = nil
-    
-    if selected == "Sea 1 - Marine Start" then islandPos = CFrame.new(1050, 20, 1450)
-    elseif selected == "Sea 1 - Middle Town" then islandPos = CFrame.new(-800, 20, 1250)
-    elseif selected == "Sea 1 - Jungle" then islandPos = CFrame.new(1600, 20, 50)
-    elseif selected == "Sea 1 - Pirate Village" then islandPos = CFrame.new(-1100, 20, 3800)
-    elseif selected == "Sea 1 - Desert" then islandPos = CFrame.new(900, 20, 4300)
-    elseif selected == "Sea 1 - Frozen Village" then islandPos = CFrame.new(700, 20, -2200)
-    elseif selected == "Sea 1 - Colosseum" then islandPos = CFrame.new(-1800, 20, -700)
-    elseif selected == "Sea 1 - Skylands" then islandPos = CFrame.new(-5000, 300, -4000)
-    elseif selected == "Sea 2 - Kingdom of Rose" then islandPos = CFrame.new(1250, 30, -1250)
-    elseif selected == "Sea 2 - Green Zone" then islandPos = CFrame.new(-2500, 30, -7000)
-    elseif selected == "Sea 2 - Cafe" then islandPos = CFrame.new(-450, 30, -3000)
-    elseif selected == "Sea 2 - Graveyard" then islandPos = CFrame.new(-5500, 30, -5500)
-    elseif selected == "Sea 2 - Snow Mountain" then islandPos = CFrame.new(800, 300, -5500)
-    elseif selected == "Sea 2 - Hot and Cold" then islandPos = CFrame.new(6000, 30, -1000)
-    elseif selected == "Sea 2 - Cursed Ship" then islandPos = CFrame.new(9000, 30, -4000)
-    elseif selected == "Sea 2 - Ice Castle" then islandPos = CFrame.new(5000, 30, -6000)
-    elseif selected == "Sea 2 - Forgotten Island" then islandPos = CFrame.new(-3000, 30, -2000)
-    elseif selected == "Sea 2 - Usoapp Island" then islandPos = CFrame.new(4000, 30, 2000)
-    elseif selected == "Sea 2 - Mansion" then islandPos = CFrame.new(-8000, 30, -3000)
-    elseif selected == "Sea 2 - Floating Turtle" then islandPos = CFrame.new(7000, 200, -2000)
-    elseif selected == "Sea 3 - Port Town" then islandPos = CFrame.new(-1200, 40, -3500)
-    elseif selected == "Sea 3 - Hydra Island" then islandPos = CFrame.new(5000, 40, -6000)
-    elseif selected == "Sea 3 - Great Tree" then islandPos = CFrame.new(7000, 100, -8000)
-    elseif selected == "Sea 3 - Turtle Island" then islandPos = CFrame.new(9000, 30, -3000)
-    elseif selected == "Sea 3 - Castle on the Sea" then islandPos = CFrame.new(-5000, 200, -5000)
-    elseif selected == "Sea 3 - Sea of Treats" then islandPos = CFrame.new(2000, 30, -9000)
-    elseif selected == "Sea 3 - Haunted Castle" then islandPos = CFrame.new(-9000, 30, -8000)
-    end
-    
-    if islandPos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-        local teleportSafe = {"Cursed Ship", "Mansion", "Floating Turtle", "Castle on the Sea"}
-        local isSafe = false
-        for _, name in pairs(teleportSafe) do
-            if selected:find(name) then
-                isSafe = true
-                break
-            end
-        end
-        
-        if isSafe then
-            Player.Character.HumanoidRootPart.CFrame = islandPos
-            Fluent:Notify({Title = "Teleport", Content = "Đã dịch chuyển", Duration = 2})
-        else
-            local bp = Instance.new("BodyPosition")
-            bp.Parent = Player.Character.HumanoidRootPart
-            bp.Position = islandPos.Position
-            bp.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            task.wait(2)
-            bp:Destroy()
-            Fluent:Notify({Title = "Teleport", Content = "Đã bay đến", Duration = 2})
-        end
-    end
-end})
-
-Tabs.Teleport:AddToggle("AutoTeleport", {Title = "Tự động dịch chuyển đến đảo", Default = false})
-
-Tabs.FruitRaid:AddSection("🍎 FRUIT")
-Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái blox", Default = false})
-Tabs.FruitRaid:AddToggle("AutoSaveFruit", {Title = "Tự động lưu trái blox", Default = false})
-Tabs.FruitRaid:AddToggle("AutoCollectFruit", {Title = "Tự động bay đến trái blox", Default = false})
-
-Tabs.FruitRaid:AddSection("⚡ RAID")
-Tabs.FruitRaid:AddDropdown("ChipSelect", {Title = "Chọn chip raid", Values = {"Flame Chip", "Ice Chip", "Quake Chip", "Light Chip", "Dark Chip", "String Chip", "Rumble Chip", "Magma Chip", "Buddha Chip", "Dough Chip"}, Default = 1})
-Tabs.FruitRaid:AddToggle("AutoBuyChip", {Title = "Tự động mua chip", Default = false})
-Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động tập kích", Default = false})
-Tabs.FruitRaid:AddToggle("AutoAwaken", {Title = "Tự động thức tỉnh", Default = false})
-Tabs.FruitRaid:AddToggle("AutoGetCheapFruit", {Title = "Tự động lấy trái blox ít tiền", Default = false})
-
-Window:SelectTab(1)
-Fluent:Notify({
-    Title = "Saidepchiu Hub",
-    Content = "Đã khôi phục toàn bộ chức năng + Nút ON/OFF!",
-    Duration = 5
-})
+            for _, v in pairs(ESP) do
+                if v.Type == "Tracer" and v.Object and v.Object.Parent then
+                    local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(v.Object.Position)
+                    if onScreen then
+                        local center = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y)
+                        v.Line
