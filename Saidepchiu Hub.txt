@@ -1,0 +1,162 @@
+local RedzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDZHUB/RedzLibV2/main/redzlibv2.lua"))()
+
+local Window = RedzLib:MakeWindow({
+  Title = "PHAN DINH BIEN PREMIUM",
+  SubTitle = "PROJECT V.I.P FARM",
+  SaveFolder = "Biendepzai_Premium.json"
+})
+
+local MainTab = Window:CreateTab("Main Farm", "rbxassetid://4483362458")
+local CombatTab = Window:CreateTab("Combat & Boss", "rbxassetid://4483362458")
+local StatsTab = Window:CreateTab("Auto Stats", "rbxassetid://4483362458")
+local DungeonTab = Window:CreateTab("Dungeon/Raid", "rbxassetid://4483362458")
+local TeleportTab = Window:CreateTab("World & Islands", "rbxassetid://4483362458")
+local VisualTab = Window:CreateTab("Visual & ESP", "rbxassetid://4483362458")
+local MiscTab = Window:CreateTab("Settings & Lag", "rbxassetid://4483362458")
+
+-- // [MAIN FARM] - CHỨC NĂNG CỐT LÕI
+MainTab:AddSection("Farm Settings")
+MainTab:AddDropdown({
+  Name = "Select Weapon",
+  Options = {"Melee", "Sword", "Fruit", "Gun"},
+  Default = "Melee",
+  Callback = function(Value) _G.SelectWeapon = Value end
+})
+
+MainTab:AddToggle({
+  Name = "Auto Farm Level (Fast)",
+  Default = false,
+  Callback = function(Value) _G.AutoFarm = Value end
+})
+
+MainTab:AddToggle({
+  Name = "Bring Mob (Gom Quái)",
+  Default = false,
+  Callback = function(Value) _G.BringMob = Value end
+})
+
+MainTab:AddToggle({
+  Name = "Fast Attack (Siêu nhanh)",
+  Default = false,
+  Callback = function(Value) _G.FastAttack = Value end
+})
+
+MainTab:AddSlider({
+  Name = "Farm Distance (Khoảng cách)",
+  Min = 1, Max = 100, Default = 25,
+  Callback = function(Value) _G.Distance = Value end
+})
+
+-- // [COMBAT & BOSS]
+CombatTab:AddSection("Boss Hunter")
+CombatTab:AddToggle({
+  Name = "Auto Farm All Bosses",
+  Default = false,
+  Callback = function(Value) _G.AutoBoss = Value end
+})
+
+CombatTab:AddToggle({
+  Name = "Auto Ken Haki",
+  Default = false,
+  Callback = function(Value) _G.AutoKen = Value end
+})
+
+-- // [AUTO STATS]
+StatsTab:AddSection("Auto Upgrade Points")
+local stats_list = {"Melee", "Defense", "Sword", "Gun", "Demon Fruit"}
+for _, v in pairs(stats_list) do
+    StatsTab:AddToggle({
+      Name = "Auto " .. v,
+      Default = false,
+      Callback = function(Value) _G["AutoStat"..v] = Value end
+    })
+end
+
+-- // [DUNGEON/RAID]
+DungeonTab:AddSection("Raid Functions")
+DungeonTab:AddToggle({
+  Name = "Auto Start Raid",
+  Default = false,
+  Callback = function(Value) _G.AutoStartRaid = Value end
+})
+DungeonTab:AddToggle({
+  Name = "Kill Aura (Raid)",
+  Default = false,
+  Callback = function(Value) _G.KillAura = Value end
+})
+
+-- // [VISUAL & ESP]
+VisualTab:AddSection("Wallhack & Tracking")
+VisualTab:AddToggle({
+  Name = "Player ESP",
+  Default = false,
+  Callback = function(Value) _G.PlayerESP = Value end
+})
+VisualTab:AddToggle({
+  Name = "Fruit ESP",
+  Default = false,
+  Callback = function(Value) _G.FruitESP = Value end
+})
+VisualTab:AddToggle({
+  Name = "Chest ESP",
+  Default = false,
+  Callback = function(Value) _G.ChestESP = Value end
+})
+
+-- // [MISC & LAG FIX]
+MiscTab:AddSection("Optimization")
+MiscTab:AddToggle({
+  Name = "Anti AFK (Kick Prevention)",
+  Default = true,
+  Callback = function(Value) _G.AntiAFK = Value end
+})
+
+MiscTab:AddButton({
+  Name = "Boost FPS (Remove Textures)",
+  Callback = function()
+    local t = game:GetService("Lighting")
+    t.GlobalShadows = false
+    t.FogEnd = 9e9
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("MeshPart") then
+            v.Material = "SmoothPlastic"
+        end
+    end
+  end
+})
+
+MiscTab:AddButton({
+  Name = "White Screen (Siêu treo máy)",
+  Callback = function()
+    game:GetService("RunService"):Set3dRenderingEnabled(false)
+  end
+})
+
+-- // TOGGLE BUTTON (LOGO LUFFY)
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("ImageButton") 
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Parent = game:GetService("CoreGui")
+ToggleButton.Parent = ScreenGui
+ToggleButton.Size = UDim2.new(0, 65, 0, 65)
+ToggleButton.Position = UDim2.new(0, 15, 0.5, -32)
+ToggleButton.Image = "rbxthumb://type=Asset&id=73480053684273&w=420&h=420"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+UICorner.CornerRadius = UDim.new(0, 20)
+UICorner.Parent = ToggleButton
+
+ToggleButton.MouseButton1Click:Connect(function()
+  game:GetService("VirtualInputManager"):SendKeyEvent(true, "RightControl", false, game)
+end)
+
+-- Anti AFK Logic
+game:GetService("Players").LocalPlayer.Idled:Connect(function()
+    if _G.AntiAFK then
+        game:GetService("VirtualUser"):CaptureController()
+        game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+    end
+end)
