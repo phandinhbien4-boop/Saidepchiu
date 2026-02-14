@@ -499,4 +499,134 @@ Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest", Default = false}):
                line.Visible = true
                txt.Position = Vector2.new(pos.X, pos.Y-20)
                local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-               txt.Text = "📦 " .. math.floor(dist)
+               txt.Text = "📦 " .. math.floor(dist) .. "m"
+               txt.Visible = true
+               table.insert(ESP, {Line=line, Text=txt})
+            end
+         end
+      end)
+   elseif espLoop then espLoop:Disconnect() clearESP() end
+end)
+
+-- ==================== TELEPORT ====================
+local islandLocations = {
+   ["Sea 1 - Marine Start"] = CFrame.new(1050,20,1450),
+   ["Sea 1 - Middle Town"] = CFrame.new(-800,20,1250),
+   ["Sea 1 - Jungle"] = CFrame.new(1600,20,50),
+   ["Sea 1 - Pirate Village"] = CFrame.new(-1100,20,3800),
+   ["Sea 1 - Desert"] = CFrame.new(900,20,4300),
+   ["Sea 1 - Frozen Village"] = CFrame.new(700,20,-2200),
+   ["Sea 1 - Colosseum"] = CFrame.new(-1800,20,-700),
+   ["Sea 1 - Skylands"] = CFrame.new(-5000,300,-4000),
+   ["Sea 2 - Kingdom of Rose"] = CFrame.new(1250,30,-1250),
+   ["Sea 2 - Green Zone"] = CFrame.new(-2500,30,-7000),
+   ["Sea 2 - Cafe"] = CFrame.new(-450,30,-3000),
+   ["Sea 2 - Graveyard"] = CFrame.new(-5500,30,-5500),
+   ["Sea 2 - Snow Mountain"] = CFrame.new(800,300,-5500),
+   ["Sea 2 - Hot and Cold"] = CFrame.new(6000,30,-1000),
+   ["Sea 2 - Cursed Ship"] = CFrame.new(9000,30,-4000),
+   ["Sea 2 - Ice Castle"] = CFrame.new(5000,30,-6000),
+   ["Sea 2 - Floating Turtle"] = CFrame.new(7000,200,-2000),
+   ["Sea 3 - Port Town"] = CFrame.new(-1200,40,-3500),
+   ["Sea 3 - Hydra Island"] = CFrame.new(5000,40,-6000),
+   ["Sea 3 - Great Tree"] = CFrame.new(7000,100,-8000),
+   ["Sea 3 - Turtle Island"] = CFrame.new(9000,30,-3000),
+   ["Sea 3 - Castle on the Sea"] = CFrame.new(-5000,200,-5000),
+   ["Sea 3 - Mansion"] = CFrame.new(-3000,50,-7000),
+   ["Sea 3 - Sea of Treats"] = CFrame.new(2000,30,-9000),
+   ["Sea 3 - Haunted Castle"] = CFrame.new(-9000,30,-8000),
+}
+
+Tabs.Teleport:AddSection("🌍 TELEPORT")
+Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = {
+   "Sea 1 - Marine Start","Sea 1 - Middle Town","Sea 1 - Jungle","Sea 1 - Pirate Village",
+   "Sea 1 - Desert","Sea 1 - Frozen Village","Sea 1 - Colosseum","Sea 1 - Skylands",
+   "Sea 2 - Kingdom of Rose","Sea 2 - Green Zone","Sea 2 - Cafe","Sea 2 - Graveyard",
+   "Sea 2 - Snow Mountain","Sea 2 - Hot and Cold","Sea 2 - Cursed Ship","Sea 2 - Ice Castle",
+   "Sea 2 - Floating Turtle","Sea 3 - Port Town","Sea 3 - Hydra Island","Sea 3 - Great Tree",
+   "Sea 3 - Turtle Island","Sea 3 - Castle on the Sea","Sea 3 - Mansion","Sea 3 - Sea of Treats",
+   "Sea 3 - Haunted Castle"
+}, Default = 1})
+
+Tabs.Teleport:AddButton({Title = "Dịch chuyển", Callback = function()
+   local pos = islandLocations[Options.IslandSelect.Value]
+   if pos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+      Player.Character.HumanoidRootPart.CFrame = pos
+      Fluent:Notify({Title="Teleport", Content="Đã dịch chuyển", Duration=2})
+   end
+end})
+
+-- ==================== FRUIT/RAID ====================
+local spinLoop, buyChipLoop, raidLoop, awakenLoop
+
+Tabs.FruitRaid:AddSection("🍎 FRUIT")
+Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái", Default = false}):OnChanged(function(v)
+   if v then
+      spinLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Chest","Buy")
+            task.wait(0.3)
+         end)
+      end)
+   elseif spinLoop then spinLoop:Disconnect() end
+end)
+
+Tabs.FruitRaid:AddToggle("AutoCollectFruit", {Title = "Tự động nhặt trái", Default = false})
+
+Tabs.FruitRaid:AddSection("⚡ RAID")
+Tabs.FruitRaid:AddDropdown("ChipSelect", {Title = "Chọn chip", Values = {
+   "Flame Chip","Ice Chip","Quake Chip","Light Chip","Dark Chip","String Chip",
+   "Rumble Chip","Magma Chip","Buddha Chip","Dough Chip","Control Chip"
+}, Default = 1})
+
+Tabs.FruitRaid:AddToggle("AutoBuyChip", {Title = "Tự động mua chip", Default = false}):OnChanged(function(v)
+   if v then
+      buyChipLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            local chip = Options.ChipSelect.Value
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("RaidsChips", chip)
+            task.wait(0.5)
+         end)
+      end)
+   elseif buyChipLoop then buyChipLoop:Disconnect() end
+end)
+
+Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động vào raid", Default = false}):OnChanged(function(v)
+   if v then
+      raidLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Raids","Enter")
+            task.wait(1)
+         end)
+      end)
+   elseif raidLoop then raidLoop:Disconnect() end
+end)
+
+Tabs.FruitRaid:AddToggle("AutoAwaken", {Title = "Tự động thức tỉnh", Default = false}):OnChanged(function(v)
+   if v then
+      awakenLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Awakening","Buy")
+            task.wait(0.5)
+         end)
+      end)
+   elseif awakenLoop then awakenLoop:Disconnect() end
+end)
+
+Window:SelectTab(1)
+
+local menuVisible = true
+ToggleBtn.MouseButton1Click:Connect(function()
+   if menuVisible then
+      Window:Hide()
+      ToggleBtn.Text = "OFF"
+      ToggleBtn.BackgroundColor3 = Color3.fromRGB(255,50,50)
+   else
+      Window:Show()
+      ToggleBtn.Text = "ON"
+      ToggleBtn.BackgroundColor3 = Color3.fromRGB(0,255,127)
+   end
+   menuVisible = not menuVisible
+end)
+
+Fluent:Notify({Title="Saidepchiu Hub", Content="Đã thêm code đầy đủ tất cả chức năng!", Duration=5})
