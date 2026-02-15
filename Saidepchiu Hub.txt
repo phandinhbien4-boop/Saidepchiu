@@ -1,399 +1,74 @@
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local Player = game:GetService("Players").LocalPlayer
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local VirtualUser = game:GetService("VirtualUser")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
+-- [[ PHẦN CORE LOGIC - LINH HỒN CỦA 1000 DÒNG CODE ]]
 
--- Anti-Ban
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-   local method = getnamecallmethod()
-   if method == "Kick" then return nil end
-   return oldNamecall(self, ...)
-end)
+local function GetCharacter()
+    return game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()
+end
 
-RunService.Heartbeat:Connect(function()
-   pcall(function()
-      game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:SetValue(math.random(45, 85))
-   end)
-end)
+-- Hàm di chuyển mượt mà nhất 2026
+local function Tween(Target)
+    local Character = GetCharacter()
+    if Character and Character:FindFirstChild("HumanoidRootPart") then
+        local Distance = (Character.HumanoidRootPart.Position - Target.p).Magnitude
+        game:GetService("TweenService"):Create(Character.HumanoidRootPart, TweenInfo.new(Distance/300, Enum.EasingStyle.Linear), {CFrame = Target}):Play()
+    end
+end
 
--- Nút MENU nhỏ hơn
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = CoreGui
-ScreenGui.Name = "Saidepchiu_UI"
-ScreenGui.ResetOnSpawn = false
+-- [[ CHỨC NĂNG FARM LEVEL & GOM QUÁI SIÊU CẤP ]]
+local function StartAutoFarm()
+    spawn(function()
+        while _G.AutoFarm do
+            task.wait()
+            pcall(function()
+                local MyLevel = game.Players.LocalPlayer.Data.Level.Value
+                local QuestData = nil
+                
+                -- Tự động nhận diện nhiệm vụ theo Level của chủ nhân
+                if MyLevel >= 700 and MyLevel < 775 then
+                    QuestData = {"FajitaQuest", 1, "Swan Pirate"}
+                elseif MyLevel >= 800 then
+                    QuestData = {"FactoryQuest", 1, "Factory Staff"}
+                end
 
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 10, 0.5, -25)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-ToggleBtn.Text = "M"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 24
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.Draggable = true
-ToggleBtn.Parent = ScreenGui
+                if QuestData then
+                    if not game.Players.LocalPlayer.PlayerGui.Main:FindFirstChild("Quest") then
+                        -- Bay đi nhận quest
+                        local NPC = game:GetService("Workspace").NPCs.Quest[QuestData[1]].HumanoidRootPart
+                        Tween(NPC.CFrame)
+                        if (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - NPC.Position).Magnitude < 5 then
+                            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", QuestData[1], QuestData[2])
+                        end
+                    else
+                        -- Đi tiêu diệt quái
+                        for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                            if v.Name == QuestData[3] and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                repeat
+                                    task.wait()
+                                    -- GOM QUÁI: Đưa quái về một điểm để đánh lan (Mob Aura)
+                                    v.HumanoidRootPart.CanCollide = false
+                                    v.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame -- Giữ quái đứng yên
+                                    
+                                    -- ĐỨNG TRÊN CAO: Chủ nhân đứng trên đầu quái 15 studs
+                                    Tween(v.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0))
+                                    
+                                    -- TẤN CÔNG: Click siêu tốc
+                                    game:GetService("VirtualUser"):CaptureController()
+                                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+                                until v.Humanoid.Health <= 0 or not _G.AutoFarm or not v.Parent
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 15)
-UICorner.Parent = ToggleBtn
-
--- Menu chính (nhỏ lại)
-local Window = Fluent:CreateWindow({
-    Title = "Saidepchiu Hub",
-    SubTitle = "By Biendepzai",
-    TabWidth = 120,
-    Size = UDim2.fromOffset(450, 400),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+-- [[ GẮN VÀO NÚT BẤM TRÊN MENU CỦA CHỦ NHÂN ]]
+Tabs.Main:AddToggle("FarmLvl", {
+    Title = "Bật Auto Farm (Sea 2)",
+    Default = false,
+    Callback = function(Value)
+        _G.AutoFarm = Value
+        if Value then StartAutoFarm() end
+    end
 })
-
-ToggleBtn.MouseButton1Click:Connect(function()
-   Window:Minimize()
-end)
-
-local Tabs = {
-    Farm = Window:AddTab({ Title = "Farm", Icon = "swords" }),
-    ESP = Window:AddTab({ Title = "ESP", Icon = "eye" }),
-    Teleport = Window:AddTab({ Title = "Teleport", Icon = "map-pin" }),
-    FruitRaid = Window:AddTab({ Title = "Fruit/Raid", Icon = "apple" }),
-    Server = Window:AddTab({ Title = "Server", Icon = "globe" })
-}
-
-local Options = Fluent.Options
-local currentTween = nil
-
--- Utility
-local function getCurrentSea()
-   local sea = 1
-   pcall(function()
-      if Player.PlayerGui.Main.SeaIcon then
-         local text = Player.PlayerGui.Main.SeaIcon.SeaText.Text
-         if text:find("First") then sea = 1
-         elseif text:find("Second") then sea = 2
-         elseif text:find("Third") then sea = 3 end
-      end
-   end)
-   return sea
-end
-
-local function flySmoothly(targetPos)
-   if currentTween then currentTween:Cancel() end
-   if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-      local hrp = Player.Character.HumanoidRootPart
-      local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear)
-      local goal = {CFrame = CFrame.new(targetPos.X, targetPos.Y + 50, targetPos.Z)}
-      currentTween = TweenService:Create(hrp, tweenInfo, goal)
-      currentTween:Play()
-   end
-end
-
-local function stopAllLoops()
-   if farmLoop then farmLoop:Disconnect() farmLoop = nil end
-   if allBossLoop then allBossLoop:Disconnect() allBossLoop = nil end
-   if selectedBossLoop then selectedBossLoop:Disconnect() selectedBossLoop = nil end
-   if factoryLoop then factoryLoop:Disconnect() factoryLoop = nil end
-end
-
--- ==================== FARM ====================
-local farmLoop, allBossLoop, selectedBossLoop, factoryLoop
-
-Tabs.Farm:AddSection("⚔️ AUTO FARM")
-Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false}):OnChanged(function(v)
-   stopAllLoops()
-   if v then
-      farmLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            for _, obj in pairs(Workspace:GetDescendants()) do
-               if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-                  local hum = obj:FindFirstChild("Humanoid")
-                  if hum and hum.Health > 0 and obj.Name ~= "Player" then
-                     flySmoothly(obj.HumanoidRootPart.Position)
-                     task.wait(0.1)
-                     VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
-                     break
-                  end
-               end
-            end
-         end)
-      end)
-   end
-end)
-
-Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm boss", Default = false}):OnChanged(function(v)
-   stopAllLoops()
-   if v then
-      allBossLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            local bossList = {"Darkbeard","Rip_Indra","Dough King","Greybeard"}
-            for _, boss in ipairs(bossList) do
-               for _, obj in pairs(Workspace:GetDescendants()) do
-                  if obj:IsA("Model") and obj.Name == boss and obj:FindFirstChild("Humanoid") then
-                     flySmoothly(obj.HumanoidRootPart.Position)
-                     task.wait(0.1)
-                     VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
-                  end
-               end
-            end
-         end)
-      end)
-   end
-end)
-
-Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss", Values = {"Darkbeard","Rip_Indra","Dough King","Greybeard"}, Default = 1})
-
-Tabs.Farm:AddToggle("AutoSelectedBoss", {Title = "Farm boss đã chọn", Default = false}):OnChanged(function(v)
-   stopAllLoops()
-   if v then
-      local boss = Options.BossSelect.Value
-      selectedBossLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            for _, obj in pairs(Workspace:GetDescendants()) do
-               if obj:IsA("Model") and obj.Name == boss and obj:FindFirstChild("Humanoid") then
-                  flySmoothly(obj.HumanoidRootPart.Position)
-                  task.wait(0.1)
-                  VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
-               end
-            end
-         end)
-      end)
-   end
-end)
-
-Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
-Tabs.Farm:AddToggle("AutoFactory", {Title = "Đánh nhà máy", Default = false}):OnChanged(function(v)
-   if factoryLoop then factoryLoop:Disconnect() factoryLoop = nil end
-   if v then
-      factoryLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            for _, obj in pairs(Workspace:GetDescendants()) do
-               if obj.Name == "Factory" or obj.Name == "Core" then
-                  flySmoothly(obj.Position)
-                  task.wait(0.1)
-                  VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
-               end
-            end
-         end)
-      end)
-   end
-end)
-
--- ==================== ESP ====================
-local ESP = {}
-local espLoop
-
-local function clearESP()
-   for _, v in pairs(ESP) do
-      pcall(function() 
-         if v.Billboard then v.Billboard:Destroy() end
-         if v.Highlight then v.Highlight:Destroy() end
-      end)
-   end
-   ESP = {}
-end
-
-Tabs.ESP:AddSection("🔍 ESP")
-Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false}):OnChanged(function(v)
-   if espLoop then espLoop:Disconnect() end
-   clearESP()
-   if v then
-      espLoop = RunService.Heartbeat:Connect(function()
-         for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("Tool") and obj.Parent and obj.Parent:FindFirstChild("Handle") then
-               local exists = false
-               for _, e in pairs(ESP) do if e.Object == obj then exists = true break end end
-               if not exists then
-                  local billboard = Instance.new("BillboardGui")
-                  billboard.Size = UDim2.new(0, 100, 0, 30)
-                  billboard.Adornee = obj
-                  billboard.AlwaysOnTop = true
-                  billboard.Parent = CoreGui
-                  
-                  local text = Instance.new("TextLabel")
-                  text.Size = UDim2.new(1,0,1,0)
-                  text.BackgroundTransparency = 1
-                  text.Text = "🍎 " .. obj.Name
-                  text.TextColor3 = Color3.fromRGB(255,215,0)
-                  text.TextStrokeTransparency = 0
-                  text.TextSize = 14
-                  text.Font = Enum.Font.GothamBold
-                  text.Parent = billboard
-                  
-                  table.insert(ESP, {Billboard = billboard, Object = obj})
-               end
-            end
-         end
-      end)
-   end
-end)
-
-Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false}):OnChanged(function(v)
-   if espLoop then espLoop:Disconnect() end
-   clearESP()
-   if v then
-      espLoop = RunService.Heartbeat:Connect(function()
-         for _, plr in pairs(Players:GetPlayers()) do
-            if plr ~= Player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-               local exists = false
-               for _, e in pairs(ESP) do if e.Object == plr.Character then exists = true break end end
-               if not exists then
-                  local billboard = Instance.new("BillboardGui")
-                  billboard.Size = UDim2.new(0, 120, 0, 30)
-                  billboard.Adornee = plr.Character
-                  billboard.AlwaysOnTop = true
-                  billboard.Parent = CoreGui
-                  
-                  local text = Instance.new("TextLabel")
-                  text.Size = UDim2.new(1,0,1,0)
-                  text.BackgroundTransparency = 1
-                  local dist = (plr.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-                  text.Text = plr.Name .. " [" .. math.floor(dist) .. "m]"
-                  text.TextColor3 = Color3.fromRGB(255,100,100)
-                  text.TextStrokeTransparency = 0
-                  text.TextSize = 14
-                  text.Font = Enum.Font.GothamBold
-                  text.Parent = billboard
-                  
-                  table.insert(ESP, {Billboard = billboard, Object = plr.Character})
-               end
-            end
-         end
-      end)
-   end
-end)
-
--- ==================== TELEPORT (THEO SEA) ====================
-local sea1Islands = {
-   "Marine Start","Middle Town","Jungle","Pirate Village",
-   "Desert","Frozen Village","Colosseum","Skylands"
-}
-
-local sea2Islands = {
-   "Kingdom of Rose","Green Zone","Cafe","Graveyard",
-   "Snow Mountain","Hot and Cold","Cursed Ship","Ice Castle"
-}
-
-local sea3Islands = {
-   "Port Town","Hydra Island","Great Tree","Turtle Island",
-   "Castle on the Sea","Mansion","Sea of Treats","Haunted Castle"
-}
-
-local islandLocations = {
-   ["Marine Start"] = CFrame.new(1050,20,1450),
-   ["Middle Town"] = CFrame.new(-800,20,1250),
-   ["Jungle"] = CFrame.new(1600,20,50),
-   ["Pirate Village"] = CFrame.new(-1100,20,3800),
-   ["Desert"] = CFrame.new(900,20,4300),
-   ["Frozen Village"] = CFrame.new(700,20,-2200),
-   ["Colosseum"] = CFrame.new(-1800,20,-700),
-   ["Skylands"] = CFrame.new(-5000,300,-4000),
-   ["Kingdom of Rose"] = CFrame.new(1250,30,-1250),
-   ["Green Zone"] = CFrame.new(-2500,30,-7000),
-   ["Cafe"] = CFrame.new(-450,30,-3000),
-   ["Graveyard"] = CFrame.new(-5500,30,-5500),
-   ["Snow Mountain"] = CFrame.new(800,300,-5500),
-   ["Hot and Cold"] = CFrame.new(6000,30,-1000),
-   ["Cursed Ship"] = CFrame.new(9000,30,-4000),
-   ["Ice Castle"] = CFrame.new(5000,30,-6000),
-   ["Port Town"] = CFrame.new(-1200,40,-3500),
-   ["Hydra Island"] = CFrame.new(5000,40,-6000),
-   ["Great Tree"] = CFrame.new(7000,100,-8000),
-   ["Turtle Island"] = CFrame.new(9000,30,-3000),
-   ["Castle on the Sea"] = CFrame.new(-5000,200,-5000),
-   ["Mansion"] = CFrame.new(-3000,50,-7000),
-   ["Sea of Treats"] = CFrame.new(2000,30,-9000),
-   ["Haunted Castle"] = CFrame.new(-9000,30,-8000),
-}
-
-local function getIslandsBySea()
-   local sea = getCurrentSea()
-   if sea == 1 then return sea1Islands
-   elseif sea == 2 then return sea2Islands
-   else return sea3Islands end
-end
-
-Tabs.Teleport:AddSection("📍 TELEPORT - SEA " .. getCurrentSea())
-Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = getIslandsBySea(), Default = 1})
-
-Tabs.Teleport:AddButton({Title = "Bay đến đảo", Callback = function()
-   local selected = Options.IslandSelect.Value
-   local pos = islandLocations[selected]
-   if pos then flySmoothly(pos.Position) end
-end})
-
--- ==================== FRUIT/RAID ====================
-local spinLoop
-
-Tabs.FruitRaid:AddSection("🍎 FRUIT")
-Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái", Default = false}):OnChanged(function(v)
-   if spinLoop then spinLoop:Disconnect() end
-   if v then
-      spinLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Chest","Buy")
-            task.wait(0.5)
-         end)
-      end)
-   end
-end)
-
-Tabs.FruitRaid:AddToggle("AutoCollectFruit", {Title = "Tự động nhặt trái", Default = false}):OnChanged(function(v)
-   if spinLoop then spinLoop:Disconnect() end
-   if v then
-      spinLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            for _, obj in pairs(Workspace:GetDescendants()) do
-               if obj:IsA("Tool") and obj.Parent and obj.Parent:FindFirstChild("Handle") then
-                  flySmoothly(obj.Position)
-                  task.wait(0.1)
-               end
-            end
-         end)
-      end)
-   end
-end)
-
-Tabs.FruitRaid:AddSection("⚡ RAID")
-Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động vào raid", Default = false}):OnChanged(function(v)
-   if spinLoop then spinLoop:Disconnect() end
-   if v then
-      spinLoop = RunService.Heartbeat:Connect(function()
-         pcall(function()
-            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Raids","Enter")
-            task.wait(1)
-         end)
-      end)
-   end
-end)
-
--- ==================== SERVER ====================
-Tabs.Server:AddSection("🌐 SERVER")
-Tabs.Server:AddButton({Title = "Rejoin Server", Callback = function()
-   TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
-end})
-
-Tabs.Server:AddButton({Title = "Hop Server Ngẫu Nhiên", Callback = function()
-   local req = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")
-   local data = HttpService:JSONDecode(req)
-   local servers = {}
-   for _, server in ipairs(data.data) do
-      if server.playing < server.maxPlayers and server.id ~= game.JobId then
-         table.insert(servers, server.id)
-      end
-   end
-   if #servers > 0 then
-      TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], Player)
-   end
-end})
-
-Window:SelectTab(1)
-Fluent:Notify({Title = "Saidepchiu Hub", Content = "Đã fix lỗi!", Duration = 3})
