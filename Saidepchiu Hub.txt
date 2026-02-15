@@ -11,52 +11,47 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
--- Anti-Ban tốt hơn
+-- Anti-Ban
 local oldNamecall
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-   local args = {...}
    local method = getnamecallmethod()
-   if method == "Kick" then
-      return nil
-   end
+   if method == "Kick" then return nil end
    return oldNamecall(self, ...)
 end)
 
--- Fake ping để tránh phát hiện
 RunService.Heartbeat:Connect(function()
    pcall(function()
       game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:SetValue(math.random(45, 85))
    end)
 end)
 
--- Nút MENU
+-- Nút MENU nhỏ hơn
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = CoreGui
 ScreenGui.Name = "Saidepchiu_UI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 70, 0, 70)
-ToggleBtn.Position = UDim2.new(0, 15, 0.5, -35)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -25)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 127)
-ToggleBtn.Text = "MENU"
+ToggleBtn.Text = "M"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 20
+ToggleBtn.TextSize = 24
 ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.Draggable = true
 ToggleBtn.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 25)
+UICorner.CornerRadius = UDim.new(0, 15)
 UICorner.Parent = ToggleBtn
 
--- Menu chính
+-- Menu chính (nhỏ lại)
 local Window = Fluent:CreateWindow({
-    Title = "Saidepchiu Hub - By Biendepzai",
-    SubTitle = "Blox Fruits 2026 | Server Hop",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(650, 600),
+    Title = "Saidepchiu Hub",
+    SubTitle = "By Biendepzai",
+    TabWidth = 120,
+    Size = UDim2.fromOffset(450, 400),
     Acrylic = true,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.LeftControl
@@ -75,14 +70,9 @@ local Tabs = {
 }
 
 local Options = Fluent.Options
+local currentTween = nil
 
--- Utility Functions
-local function getLevel()
-   local lv = 1
-   pcall(function() lv = Player.Data.Level.Value end)
-   return lv
-end
-
+-- Utility
 local function getCurrentSea()
    local sea = 1
    pcall(function()
@@ -96,167 +86,108 @@ local function getCurrentSea()
    return sea
 end
 
--- Bay từ từ đến mục tiêu (tránh kick)
 local function flySmoothly(targetPos)
+   if currentTween then currentTween:Cancel() end
    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
       local hrp = Player.Character.HumanoidRootPart
-      local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+      local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear)
       local goal = {CFrame = CFrame.new(targetPos.X, targetPos.Y + 50, targetPos.Z)}
-      local tween = TweenService:Create(hrp, tweenInfo, goal)
-      tween:Play()
-      return tween
+      currentTween = TweenService:Create(hrp, tweenInfo, goal)
+      currentTween:Play()
    end
 end
 
-local function attackNoAnim()
-   pcall(function()
-      for _, v in pairs(Player.Character:GetDescendants()) do
-         if v:IsA("Animation") or v:IsA("Animator") then
-            v:Destroy()
-         end
-      end
-      VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
-   end)
+local function stopAllLoops()
+   if farmLoop then farmLoop:Disconnect() farmLoop = nil end
+   if allBossLoop then allBossLoop:Disconnect() allBossLoop = nil end
+   if selectedBossLoop then selectedBossLoop:Disconnect() selectedBossLoop = nil end
+   if factoryLoop then factoryLoop:Disconnect() factoryLoop = nil end
 end
 
 -- ==================== FARM ====================
-local function getMobByLevel(lv)
-   local list = {
-      [1]="Bandit",[30]="Monkey",[60]="Pirate",[90]="Brute",[120]="Desert Officer",
-      [150]="Snow Bandit",[180]="Vampire",[210]="Snow Troop",[240]="Mercenary",
-      [270]="Swan Pirate",[300]="Marine Captain",[330]="Sky Bandit",[360]="Dark Master",
-      [390]="Toga Warrior",[420]="Gladiator",[450]="Military Soldier",[480]="Military Spy",
-      [510]="Fishman Warrior",[540]="Fishman Commando",[570]="God's Guard",[600]="Shanda",
-      [630]="Royal Squad",[660]="Royal Soldier",[700]="Galley Pirate",[725]="Raider",
-      [750]="Mercenary",[775]="Swan Pirate",[800]="Marine Captain",[825]="Fishman Raider",
-      [850]="Fishman Captain",[875]="Fishman Lord",[900]="Pirate Raider",[950]="Pirate Captain",
-      [1000]="Pirate Lord",[1050]="Dark Raider",[1100]="Dark Captain",[1150]="Dark Lord",
-      [1200]="Raider (Lava)",[1250]="Captain (Lava)",[1300]="Lord (Lava)",[1350]="Damaged Raider",
-      [1400]="Damaged Captain",[1450]="Damaged Lord",[1500]="Awakened Raider",[1550]="Pirate Millionaire",
-      [1600]="Pirate Billionaire",[1650]="Pirate Trillionaire",[1700]="Forest Pirate",
-      [1750]="Musketeer Pirate",[1800]="Mercenary",[1850]="Swan Pirate",[1900]="Marine Captain",
-      [1950]="Fishman Raider",[2000]="Fishman Captain",[2050]="Fishman Lord",[2100]="Pirate Raider",
-      [2150]="Pirate Captain",[2200]="Pirate Lord",[2250]="Dark Raider",[2300]="Dark Captain",
-      [2350]="Dark Lord",[2400]="Raider (Lava)",[2450]="Captain (Lava)",[2500]="Lord (Lava)",
-      [2550]="Ghost Pirate",[2600]="Cursed Sailor",[2650]="Tyrant Soldier",[2700]="Tyrant Captain",
-      [2750]="Tyrant General",[2800]="Tyrant Lord"
-   }
-   local mob = "Tyrant King"
-   for l, m in pairs(list) do
-      if lv >= l then mob = m end
-   end
-   return mob
-end
+local farmLoop, allBossLoop, selectedBossLoop, factoryLoop
 
-local bossListSea1 = {
-   "The Gorilla King","Bobby","Jeremy","Diamond","Saber Expert",
-   "Greybeard","Strawberry","Cake Queen","Don Swan","Smoke Admiral"
-}
-local bossListSea2 = {
-   "Wysper","Darkbeard","Rip_Indra","Cursed Captain","Ice Admiral"
-}
-local bossListSea3 = {
-   "Dough King","Rip_Return","Unbound Werewolf","Tiger Emperor",
-   "Gas Boss","Control Master"
-}
-
-local function getBossListBySea()
-   local sea = getCurrentSea()
-   if sea == 1 then return bossListSea1
-   elseif sea == 2 then return bossListSea2
-   else return bossListSea3 end
-end
-
-local farmLoop
-Tabs.Farm:AddSection("⚔️ AUTO FARM LEVEL")
+Tabs.Farm:AddSection("⚔️ AUTO FARM")
 Tabs.Farm:AddToggle("AutoFarmLevel", {Title = "Tự động farm level", Default = false}):OnChanged(function(v)
+   stopAllLoops()
    if v then
       farmLoop = RunService.Heartbeat:Connect(function()
          pcall(function()
-            local mobName = getMobByLevel(getLevel())
             for _, obj in pairs(Workspace:GetDescendants()) do
-               if obj:IsA("Model") and obj.Name == mobName and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
+               if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
                   local hum = obj:FindFirstChild("Humanoid")
-                  if hum and hum.Health > 0 then
+                  if hum and hum.Health > 0 and obj.Name ~= "Player" then
                      flySmoothly(obj.HumanoidRootPart.Position)
-                     task.wait(0.5)
-                     attackNoAnim()
+                     task.wait(0.1)
+                     VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
                      break
                   end
                end
             end
          end)
       end)
-   elseif farmLoop then farmLoop:Disconnect() end
+   end
 end)
 
-local allBossLoop
-Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm tất cả boss", Default = false}):OnChanged(function(v)
+Tabs.Farm:AddToggle("AutoAllBoss", {Title = "Tự động farm boss", Default = false}):OnChanged(function(v)
+   stopAllLoops()
    if v then
       allBossLoop = RunService.Heartbeat:Connect(function()
          pcall(function()
-            local bossList = getBossListBySea()
+            local bossList = {"Darkbeard","Rip_Indra","Dough King","Greybeard"}
             for _, boss in ipairs(bossList) do
                for _, obj in pairs(Workspace:GetDescendants()) do
-                  if obj:IsA("Model") and obj.Name == boss and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-                     local hum = obj:FindFirstChild("Humanoid")
-                     if hum and hum.Health > 0 then
-                        flySmoothly(obj.HumanoidRootPart.Position)
-                        task.wait(0.5)
-                        attackNoAnim()
-                        break
-                     end
+                  if obj:IsA("Model") and obj.Name == boss and obj:FindFirstChild("Humanoid") then
+                     flySmoothly(obj.HumanoidRootPart.Position)
+                     task.wait(0.1)
+                     VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
                   end
                end
             end
          end)
       end)
-   elseif allBossLoop then allBossLoop:Disconnect() end
+   end
 end)
 
-Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss", Values = getBossListBySea(), Default = 1})
+Tabs.Farm:AddDropdown("BossSelect", {Title = "Chọn boss", Values = {"Darkbeard","Rip_Indra","Dough King","Greybeard"}, Default = 1})
 
-local selectedBossLoop
-Tabs.Farm:AddToggle("AutoSelectedBoss", {Title = "Tự động farm boss đã chọn", Default = false}):OnChanged(function(v)
+Tabs.Farm:AddToggle("AutoSelectedBoss", {Title = "Farm boss đã chọn", Default = false}):OnChanged(function(v)
+   stopAllLoops()
    if v then
       local boss = Options.BossSelect.Value
       selectedBossLoop = RunService.Heartbeat:Connect(function()
          pcall(function()
             for _, obj in pairs(Workspace:GetDescendants()) do
-               if obj:IsA("Model") and obj.Name == boss and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-                  local hum = obj:FindFirstChild("Humanoid")
-                  if hum and hum.Health > 0 then
-                     flySmoothly(obj.HumanoidRootPart.Position)
-                     task.wait(0.5)
-                     attackNoAnim()
-                     break
-                  end
+               if obj:IsA("Model") and obj.Name == boss and obj:FindFirstChild("Humanoid") then
+                  flySmoothly(obj.HumanoidRootPart.Position)
+                  task.wait(0.1)
+                  VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
                end
             end
          end)
       end)
-   elseif selectedBossLoop then selectedBossLoop:Disconnect() end
+   end
 end)
 
-local factoryLoop
 Tabs.Farm:AddSection("⚡ FARM ĐẶC BIỆT")
-Tabs.Farm:AddToggle("AutoFactory", {Title = "Tự động đánh nhà máy", Default = false}):OnChanged(function(v)
+Tabs.Farm:AddToggle("AutoFactory", {Title = "Đánh nhà máy", Default = false}):OnChanged(function(v)
+   if factoryLoop then factoryLoop:Disconnect() factoryLoop = nil end
    if v then
       factoryLoop = RunService.Heartbeat:Connect(function()
          pcall(function()
             for _, obj in pairs(Workspace:GetDescendants()) do
                if obj.Name == "Factory" or obj.Name == "Core" then
                   flySmoothly(obj.Position)
-                  task.wait(0.5)
-                  attackNoAnim()
+                  task.wait(0.1)
+                  VirtualUser:ClickButton1(Vector2.new(), Workspace.CurrentCamera.CFrame)
                end
             end
          end)
       end)
-   elseif factoryLoop then factoryLoop:Disconnect() end
+   end
 end)
 
--- ==================== ESP MỚI - HIỂN THỊ TÊN TRÁI ====================
+-- ==================== ESP ====================
 local ESP = {}
 local espLoop
 
@@ -270,189 +201,117 @@ local function clearESP()
    ESP = {}
 end
 
-local fruitNames = {
-   ["Bomb-Fruit"] = "Bomb", ["Spike-Fruit"] = "Spike", ["Chop-Fruit"] = "Chop",
-   ["Spring-Fruit"] = "Spring", ["Kilo-Fruit"] = "Kilo", ["Spin-Fruit"] = "Spin",
-   ["Bird-Fruit"] = "Bird", ["Smoke-Fruit"] = "Smoke", ["Flame-Fruit"] = "Flame",
-   ["Ice-Fruit"] = "Ice", ["Sand-Fruit"] = "Sand", ["Dark-Fruit"] = "Dark",
-   ["Light-Fruit"] = "Light", ["Magma-Fruit"] = "Magma", ["Rubber-Fruit"] = "Rubber",
-   ["Barrier-Fruit"] = "Barrier", ["Ghost-Fruit"] = "Ghost", ["Diamond-Fruit"] = "Diamond",
-   ["Rock-Fruit"] = "Rock", ["Quake-Fruit"] = "Quake", ["String-Fruit"] = "String",
-   ["Warrior-Fruit"] = "Warrior", ["Revive-Fruit"] = "Revive", ["Blizzard-Fruit"] = "Blizzard",
-   ["Venom-Fruit"] = "Venom", ["Shadow-Fruit"] = "Shadow", ["Dragon-Fruit"] = "Dragon",
-   ["Control-Fruit"] = "Control", ["Soul-Fruit"] = "Soul", ["Leopard-Fruit"] = "Leopard",
-   ["Falcon-Fruit"] = "Falcon", ["Gravity-Fruit"] = "Gravity", ["Dough-Fruit"] = "Dough",
-   ["Spider-Fruit"] = "Spider", ["Love-Fruit"] = "Love", ["Sound-Fruit"] = "Sound",
-   ["Pain-Fruit"] = "Pain", ["Rumble-Fruit"] = "Rumble", ["Mammoth-Fruit"] = "Mammoth",
-   ["T-Rex-Fruit"] = "T-Rex", ["Yeti-Fruit"] = "Yeti", ["Gas-Fruit"] = "Gas",
-   ["Tiger-Fruit"] = "Tiger", ["Eagle-Fruit"] = "Eagle", ["Creation-Fruit"] = "Creation"
-}
-
 Tabs.ESP:AddSection("🔍 ESP")
 Tabs.ESP:AddToggle("ESPBloxFruit", {Title = "Định vị trái blox", Default = false}):OnChanged(function(v)
+   if espLoop then espLoop:Disconnect() end
+   clearESP()
    if v then
       espLoop = RunService.Heartbeat:Connect(function()
-         clearESP()
          for _, obj in pairs(Workspace:GetDescendants()) do
             if obj:IsA("Tool") and obj.Parent and obj.Parent:FindFirstChild("Handle") then
-               local fruitName = "Trái Blox"
-               for pattern, name in pairs(fruitNames) do
-                  if obj.Name:find(pattern) then
-                     fruitName = name
-                     break
-                  end
+               local exists = false
+               for _, e in pairs(ESP) do if e.Object == obj then exists = true break end end
+               if not exists then
+                  local billboard = Instance.new("BillboardGui")
+                  billboard.Size = UDim2.new(0, 100, 0, 30)
+                  billboard.Adornee = obj
+                  billboard.AlwaysOnTop = true
+                  billboard.Parent = CoreGui
+                  
+                  local text = Instance.new("TextLabel")
+                  text.Size = UDim2.new(1,0,1,0)
+                  text.BackgroundTransparency = 1
+                  text.Text = "🍎 " .. obj.Name
+                  text.TextColor3 = Color3.fromRGB(255,215,0)
+                  text.TextStrokeTransparency = 0
+                  text.TextSize = 14
+                  text.Font = Enum.Font.GothamBold
+                  text.Parent = billboard
+                  
+                  table.insert(ESP, {Billboard = billboard, Object = obj})
                end
-               
-               local highlight = Instance.new("Highlight")
-               highlight.Adornee = obj
-               highlight.FillColor = Color3.fromRGB(255,215,0)
-               highlight.FillTransparency = 0.3
-               highlight.OutlineColor = Color3.fromRGB(255,255,255)
-               highlight.Parent = CoreGui
-               
-               local billboard = Instance.new("BillboardGui")
-               billboard.Size = UDim2.new(0, 150, 0, 50)
-               billboard.Adornee = obj
-               billboard.AlwaysOnTop = true
-               billboard.Parent = CoreGui
-               
-               local text = Instance.new("TextLabel")
-               text.Size = UDim2.new(1,0,1,0)
-               text.BackgroundTransparency = 1
-               text.Text = "🍎 " .. fruitName
-               text.TextColor3 = Color3.fromRGB(255,255,255)
-               text.TextStrokeColor3 = Color3.fromRGB(0,0,0)
-               text.TextStrokeTransparency = 0
-               text.TextSize = 16
-               text.Font = Enum.Font.GothamBold
-               text.Parent = billboard
-               
-               table.insert(ESP, {Highlight = highlight, Billboard = billboard, Object = obj})
             end
          end
       end)
-   elseif espLoop then espLoop:Disconnect() clearESP() end
+   end
 end)
 
 Tabs.ESP:AddToggle("ESPPlayer", {Title = "Định vị người chơi", Default = false}):OnChanged(function(v)
+   if espLoop then espLoop:Disconnect() end
+   clearESP()
    if v then
       espLoop = RunService.Heartbeat:Connect(function()
-         clearESP()
          for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= Player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-               local highlight = Instance.new("Highlight")
-               highlight.Adornee = plr.Character
-               highlight.FillColor = Color3.fromRGB(255,0,0)
-               highlight.FillTransparency = 0.3
-               highlight.OutlineColor = Color3.fromRGB(255,255,255)
-               highlight.Parent = CoreGui
-               
-               local billboard = Instance.new("BillboardGui")
-               billboard.Size = UDim2.new(0, 150, 0, 50)
-               billboard.Adornee = plr.Character
-               billboard.AlwaysOnTop = true
-               billboard.Parent = CoreGui
-               
-               local text = Instance.new("TextLabel")
-               text.Size = UDim2.new(1,0,1,0)
-               text.BackgroundTransparency = 1
-               local dist = (plr.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-               text.Text = plr.Name .. " [" .. math.floor(dist) .. "m]"
-               text.TextColor3 = Color3.fromRGB(255,255,255)
-               text.TextStrokeColor3 = Color3.fromRGB(0,0,0)
-               text.TextStrokeTransparency = 0
-               text.TextSize = 16
-               text.Font = Enum.Font.GothamBold
-               text.Parent = billboard
-               
-               table.insert(ESP, {Highlight = highlight, Billboard = billboard, Object = plr.Character})
+               local exists = false
+               for _, e in pairs(ESP) do if e.Object == plr.Character then exists = true break end end
+               if not exists then
+                  local billboard = Instance.new("BillboardGui")
+                  billboard.Size = UDim2.new(0, 120, 0, 30)
+                  billboard.Adornee = plr.Character
+                  billboard.AlwaysOnTop = true
+                  billboard.Parent = CoreGui
+                  
+                  local text = Instance.new("TextLabel")
+                  text.Size = UDim2.new(1,0,1,0)
+                  text.BackgroundTransparency = 1
+                  local dist = (plr.Character.HumanoidRootPart.Position - Player.Character.HumanoidRootPart.Position).Magnitude
+                  text.Text = plr.Name .. " [" .. math.floor(dist) .. "m]"
+                  text.TextColor3 = Color3.fromRGB(255,100,100)
+                  text.TextStrokeTransparency = 0
+                  text.TextSize = 14
+                  text.Font = Enum.Font.GothamBold
+                  text.Parent = billboard
+                  
+                  table.insert(ESP, {Billboard = billboard, Object = plr.Character})
+               end
             end
          end
       end)
-   elseif espLoop then espLoop:Disconnect() clearESP() end
+   end
 end)
 
-Tabs.ESP:AddToggle("ESPChest", {Title = "Định vị chest", Default = false}):OnChanged(function(v)
-   if v then
-      espLoop = RunService.Heartbeat:Connect(function()
-         clearESP()
-         for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj.Name == "Chest1" or obj.Name == "Chest2" or obj.Name == "Chest3" then
-               local highlight = Instance.new("Highlight")
-               highlight.Adornee = obj
-               highlight.FillColor = Color3.fromRGB(0,255,0)
-               highlight.FillTransparency = 0.3
-               highlight.OutlineColor = Color3.fromRGB(255,255,255)
-               highlight.Parent = CoreGui
-               
-               local billboard = Instance.new("BillboardGui")
-               billboard.Size = UDim2.new(0, 150, 0, 50)
-               billboard.Adornee = obj
-               billboard.AlwaysOnTop = true
-               billboard.Parent = CoreGui
-               
-               local text = Instance.new("TextLabel")
-               text.Size = UDim2.new(1,0,1,0)
-               text.BackgroundTransparency = 1
-               local dist = (obj.Position - Player.Character.HumanoidRootPart.Position).Magnitude
-               text.Text = "📦 " .. math.floor(dist) .. "m"
-               text.TextColor3 = Color3.fromRGB(255,255,255)
-               text.TextStrokeColor3 = Color3.fromRGB(0,0,0)
-               text.TextStrokeTransparency = 0
-               text.TextSize = 16
-               text.Font = Enum.Font.GothamBold
-               text.Parent = billboard
-               
-               table.insert(ESP, {Highlight = highlight, Billboard = billboard, Object = obj})
-            end
-         end
-      end)
-   elseif espLoop then espLoop:Disconnect() clearESP() end
-end)
-
--- ==================== TELEPORT - CHỈ HIỆN ĐẢO TRONG SEA ====================
+-- ==================== TELEPORT (THEO SEA) ====================
 local sea1Islands = {
-   "Sea 1 - Marine Start","Sea 1 - Middle Town","Sea 1 - Jungle","Sea 1 - Pirate Village",
-   "Sea 1 - Desert","Sea 1 - Frozen Village","Sea 1 - Colosseum","Sea 1 - Skylands"
+   "Marine Start","Middle Town","Jungle","Pirate Village",
+   "Desert","Frozen Village","Colosseum","Skylands"
 }
 
 local sea2Islands = {
-   "Sea 2 - Kingdom of Rose","Sea 2 - Green Zone","Sea 2 - Cafe","Sea 2 - Graveyard",
-   "Sea 2 - Snow Mountain","Sea 2 - Hot and Cold","Sea 2 - Cursed Ship","Sea 2 - Ice Castle",
-   "Sea 2 - Floating Turtle"
+   "Kingdom of Rose","Green Zone","Cafe","Graveyard",
+   "Snow Mountain","Hot and Cold","Cursed Ship","Ice Castle"
 }
 
 local sea3Islands = {
-   "Sea 3 - Port Town","Sea 3 - Hydra Island","Sea 3 - Great Tree","Sea 3 - Turtle Island",
-   "Sea 3 - Castle on the Sea","Sea 3 - Mansion","Sea 3 - Sea of Treats","Sea 3 - Haunted Castle"
+   "Port Town","Hydra Island","Great Tree","Turtle Island",
+   "Castle on the Sea","Mansion","Sea of Treats","Haunted Castle"
 }
 
 local islandLocations = {
-   ["Sea 1 - Marine Start"] = CFrame.new(1050,20,1450),
-   ["Sea 1 - Middle Town"] = CFrame.new(-800,20,1250),
-   ["Sea 1 - Jungle"] = CFrame.new(1600,20,50),
-   ["Sea 1 - Pirate Village"] = CFrame.new(-1100,20,3800),
-   ["Sea 1 - Desert"] = CFrame.new(900,20,4300),
-   ["Sea 1 - Frozen Village"] = CFrame.new(700,20,-2200),
-   ["Sea 1 - Colosseum"] = CFrame.new(-1800,20,-700),
-   ["Sea 1 - Skylands"] = CFrame.new(-5000,300,-4000),
-   ["Sea 2 - Kingdom of Rose"] = CFrame.new(1250,30,-1250),
-   ["Sea 2 - Green Zone"] = CFrame.new(-2500,30,-7000),
-   ["Sea 2 - Cafe"] = CFrame.new(-450,30,-3000),
-   ["Sea 2 - Graveyard"] = CFrame.new(-5500,30,-5500),
-   ["Sea 2 - Snow Mountain"] = CFrame.new(800,300,-5500),
-   ["Sea 2 - Hot and Cold"] = CFrame.new(6000,30,-1000),
-   ["Sea 2 - Cursed Ship"] = CFrame.new(9000,30,-4000),
-   ["Sea 2 - Ice Castle"] = CFrame.new(5000,30,-6000),
-   ["Sea 2 - Floating Turtle"] = CFrame.new(7000,200,-2000),
-   ["Sea 3 - Port Town"] = CFrame.new(-1200,40,-3500),
-   ["Sea 3 - Hydra Island"] = CFrame.new(5000,40,-6000),
-   ["Sea 3 - Great Tree"] = CFrame.new(7000,100,-8000),
-   ["Sea 3 - Turtle Island"] = CFrame.new(9000,30,-3000),
-   ["Sea 3 - Castle on the Sea"] = CFrame.new(-5000,200,-5000),
-   ["Sea 3 - Mansion"] = CFrame.new(-3000,50,-7000),
-   ["Sea 3 - Sea of Treats"] = CFrame.new(2000,30,-9000),
-   ["Sea 3 - Haunted Castle"] = CFrame.new(-9000,30,-8000),
+   ["Marine Start"] = CFrame.new(1050,20,1450),
+   ["Middle Town"] = CFrame.new(-800,20,1250),
+   ["Jungle"] = CFrame.new(1600,20,50),
+   ["Pirate Village"] = CFrame.new(-1100,20,3800),
+   ["Desert"] = CFrame.new(900,20,4300),
+   ["Frozen Village"] = CFrame.new(700,20,-2200),
+   ["Colosseum"] = CFrame.new(-1800,20,-700),
+   ["Skylands"] = CFrame.new(-5000,300,-4000),
+   ["Kingdom of Rose"] = CFrame.new(1250,30,-1250),
+   ["Green Zone"] = CFrame.new(-2500,30,-7000),
+   ["Cafe"] = CFrame.new(-450,30,-3000),
+   ["Graveyard"] = CFrame.new(-5500,30,-5500),
+   ["Snow Mountain"] = CFrame.new(800,300,-5500),
+   ["Hot and Cold"] = CFrame.new(6000,30,-1000),
+   ["Cursed Ship"] = CFrame.new(9000,30,-4000),
+   ["Ice Castle"] = CFrame.new(5000,30,-6000),
+   ["Port Town"] = CFrame.new(-1200,40,-3500),
+   ["Hydra Island"] = CFrame.new(5000,40,-6000),
+   ["Great Tree"] = CFrame.new(7000,100,-8000),
+   ["Turtle Island"] = CFrame.new(9000,30,-3000),
+   ["Castle on the Sea"] = CFrame.new(-5000,200,-5000),
+   ["Mansion"] = CFrame.new(-3000,50,-7000),
+   ["Sea of Treats"] = CFrame.new(2000,30,-9000),
+   ["Haunted Castle"] = CFrame.new(-9000,30,-8000),
 }
 
 local function getIslandsBySea()
@@ -462,16 +321,79 @@ local function getIslandsBySea()
    else return sea3Islands end
 end
 
-Tabs.Teleport:AddSection("📍 TELEPORT - CHỈ ĐẢO TRONG SEA " .. getCurrentSea())
+Tabs.Teleport:AddSection("📍 TELEPORT - SEA " .. getCurrentSea())
 Tabs.Teleport:AddDropdown("IslandSelect", {Title = "Chọn đảo", Values = getIslandsBySea(), Default = 1})
 
-Tabs.Teleport:AddButton({Title = "Bay đến đảo (5 giây)", Callback = function()
+Tabs.Teleport:AddButton({Title = "Bay đến đảo", Callback = function()
    local selected = Options.IslandSelect.Value
    local pos = islandLocations[selected]
-   if pos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-      flySmoothly(pos.Position)
-      Fluent:Notify({Title="Teleport", Content="Đang bay đến " .. selected .. " (5s)", Duration=5})
+   if pos then flySmoothly(pos.Position) end
+end})
+
+-- ==================== FRUIT/RAID ====================
+local spinLoop
+
+Tabs.FruitRaid:AddSection("🍎 FRUIT")
+Tabs.FruitRaid:AddToggle("AutoSpinFruit", {Title = "Tự động quay trái", Default = false}):OnChanged(function(v)
+   if spinLoop then spinLoop:Disconnect() end
+   if v then
+      spinLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Chest","Buy")
+            task.wait(0.5)
+         end)
+      end)
+   end
+end)
+
+Tabs.FruitRaid:AddToggle("AutoCollectFruit", {Title = "Tự động nhặt trái", Default = false}):OnChanged(function(v)
+   if spinLoop then spinLoop:Disconnect() end
+   if v then
+      spinLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            for _, obj in pairs(Workspace:GetDescendants()) do
+               if obj:IsA("Tool") and obj.Parent and obj.Parent:FindFirstChild("Handle") then
+                  flySmoothly(obj.Position)
+                  task.wait(0.1)
+               end
+            end
+         end)
+      end)
+   end
+end)
+
+Tabs.FruitRaid:AddSection("⚡ RAID")
+Tabs.FruitRaid:AddToggle("AutoRaid", {Title = "Tự động vào raid", Default = false}):OnChanged(function(v)
+   if spinLoop then spinLoop:Disconnect() end
+   if v then
+      spinLoop = RunService.Heartbeat:Connect(function()
+         pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("Raids","Enter")
+            task.wait(1)
+         end)
+      end)
+   end
+end)
+
+-- ==================== SERVER ====================
+Tabs.Server:AddSection("🌐 SERVER")
+Tabs.Server:AddButton({Title = "Rejoin Server", Callback = function()
+   TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+end})
+
+Tabs.Server:AddButton({Title = "Hop Server Ngẫu Nhiên", Callback = function()
+   local req = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")
+   local data = HttpService:JSONDecode(req)
+   local servers = {}
+   for _, server in ipairs(data.data) do
+      if server.playing < server.maxPlayers and server.id ~= game.JobId then
+         table.insert(servers, server.id)
+      end
+   end
+   if #servers > 0 then
+      TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], Player)
    end
 end})
 
--- ==================== FRUIT/RAID =
+Window:SelectTab(1)
+Fluent:Notify({Title = "Saidepchiu Hub", Content = "Đã fix lỗi!", Duration = 3})
